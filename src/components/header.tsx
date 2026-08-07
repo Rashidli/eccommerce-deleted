@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, Heart, User } from "lucide-react";
+import { ShoppingCart, Heart, User, Search, X } from "lucide-react";
 import { TopBar } from "@/components/header/top-bar";
 import { CategoryBar } from "@/components/header/category-bar";
 import type { HomeCategoryDTO } from "@/lib/data/catalog";
@@ -25,7 +25,7 @@ export function Header({
   /** { platformaAçarı: { valideynId: alt kateqoriyalar } } — nav dropdown-u üçün. */
   platformSubcategories?: Record<string, Record<string, HomeCategoryDTO[]>>;
 }) {
-  const { platform, setPlatform } = useSearch();
+  const { platform, setPlatform, searchOpen, setSearchOpen } = useSearch();
   const { totalItems } = useCart();
   const { totalItems: wishlistItems } = useWishlist();
   const { t } = useLang();
@@ -61,21 +61,26 @@ export function Header({
               />
             </div>
 
-            {/* Mobil — EYNİ axtarış barı, sadəcə platforma tabları olmadan.
-                Əvvəl burada dialoq açan düymə vardı; dialoq ləğv edildi. */}
-            <div className="flex flex-1 md:hidden">
-              <SearchBar
-                compact
-                platform={platform}
-                onPlatformChange={setPlatform}
-                categories={categories}
-                platformCategories={platformCategories}
-                platformSubcategories={platformSubcategories}
-              />
-            </div>
+            {/* Mobil — input BURADA deyil.
+                Səbəb: daimi input brend adını sıxışdırırdı (ad nə qədər uzun
+                olsa, bir o qədər). İndi yalnız lupa düyməsi durur, input isə
+                başlığın ALTINDA, tam enlə açılır (aşağıda). */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(!searchOpen)}
+              aria-label={searchOpen ? t.common.close : t.common.search}
+              aria-expanded={searchOpen}
+              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-foreground/70 transition-colors active:scale-90 hover:bg-secondary hover:text-foreground md:hidden"
+            >
+              {searchOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Search className="h-5 w-5" />
+              )}
+            </button>
 
             {/* Actions — mobildə yalnız səbət, qalanı bottom-nav-dadır */}
-            <div className="ml-auto flex items-center gap-3 sm:gap-4 shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0 md:ml-auto">
               <Link
                 href={user ? "/panel" : "/login"}
                 className="hidden items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground md:flex"
@@ -115,6 +120,28 @@ export function Header({
 
               {/* Mobil burger menyu — giriş, qalan linklər, dil */}
               <MobileMenu user={user} />
+            </div>
+          </div>
+
+          {/* 2b) Mobil axtarış — lupa ilə açılır, tam en. `grid-rows` keçidi
+                  hündürlüyü animasiya etməyə imkan verir (`height:auto`
+                  animasiya olunmur, ona görə `1fr`/`0fr` işlədilir). */}
+          <div
+            className={`grid overflow-hidden transition-[grid-template-rows] duration-200 md:hidden ${
+              searchOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
+          >
+            <div className="min-h-0">
+              <div className="px-4 pb-3">
+                <SearchBar
+                  compact
+                  platform={platform}
+                  onPlatformChange={setPlatform}
+                  categories={categories}
+                  platformCategories={platformCategories}
+                  platformSubcategories={platformSubcategories}
+                />
+              </div>
             </div>
           </div>
         </div>

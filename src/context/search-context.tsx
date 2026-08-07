@@ -51,6 +51,15 @@ interface SearchContextValue {
    * yeni nəsə etmir") — indi başlıqdakı ƏSL axtarış inputu fokuslanır.
    */
   focusSearch: (platform?: Platform) => void;
+  /**
+   * MOBİLDƏ axtarış barı açıqdırmı.
+   *
+   * Mobil başlıqda input daimi görünmür — yer çatmır, brend adını sıxışdırırdı.
+   * Onun yerinə lupa düyməsi var, input isə başlığın ALTINDA açılır.
+   * Masaüstündə bu dəyər nəzərə alınmır (input onsuz da həmişə görünür).
+   */
+  searchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
 }
 
 const SearchContext = createContext<SearchContextValue | null>(null);
@@ -94,29 +103,46 @@ export function SearchProvider({
     writeCookie(PLATFORM_COOKIE, p);
   }, []);
 
+  // Mobil axtarış barı — defolt bağlı.
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const focusSearch = useCallback(
     (p?: Platform) => {
       if (p) setPlatform(p);
+      // Mobildə input bağlıdırsa əvvəlcə AÇILMALIDIR, yoxsa aşağıdakı
+      // "görünən input" axtarışı heç nə tapmır və fokus baş tutmur.
+      setSearchOpen(true);
       // Başlıq `sticky`-dir, amma səhifə aşağıda olsa fokus görünməyə bilər —
       // ona görə əvvəl yuxarı sürüşdürülür.
       window.scrollTo({ top: 0, behavior: "smooth" });
       // Bir tik gecikmə: platforma dəyişikliyi render olunandan sonra fokus.
-      setTimeout(() => {
-        const inputs = document.querySelectorAll<HTMLInputElement>(
-          `input[${SEARCH_INPUT_ATTR}]`,
-        );
-        // `offsetParent === null` → element gizlidir (display:none).
-        const visible = [...inputs].find((el) => el.offsetParent !== null);
-        visible?.focus();
-        visible?.select();
-      }, 0);
+      // İki tik: birincidə `searchOpen` render olunur, ikincidə input DOM-da
+      // GÖRÜNƏN olur. Tək tikdə mobil input hələ gizli sayılırdı.
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          const inputs = document.querySelectorAll<HTMLInputElement>(
+            `input[${SEARCH_INPUT_ATTR}]`,
+          );
+          // `offsetParent === null` → element gizlidir (display:none).
+          const visible = [...inputs].find((el) => el.offsetParent !== null);
+          visible?.focus();
+          visible?.select();
+        }, 0);
+      });
     },
     [setPlatform],
   );
 
   return (
     <SearchContext.Provider
-      value={{ platform, setPlatform, platforms, focusSearch }}
+      value={{
+        platform,
+        setPlatform,
+        platforms,
+        focusSearch,
+        searchOpen,
+        setSearchOpen,
+      }}
     >
       {children}
     </SearchContext.Provider>
