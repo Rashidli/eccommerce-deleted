@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "E-Commerce — Qlobal trendləri kəşf et",
     short_name: "E-Commerce",
     description:
-      "1688 məhsulları. Bir tətbiqdə bütün qlobal trendlər.",
+      "Minlərlə məhsul. Bir tətbiqdə bütün qlobal trendlər.",
     start_url: "/",
     scope: "/",
     display: "standalone",

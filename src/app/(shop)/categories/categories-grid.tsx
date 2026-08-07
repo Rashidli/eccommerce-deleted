@@ -4,6 +4,7 @@ import type { HomeCategoryDTO } from "@/lib/data/catalog";
 import { useLang } from "@/context/lang-context";
 import { CategoryTile } from "@/components/category-tile";
 import { useCategoryList } from "@/lib/use-category-list";
+import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 
 /**
  * Kateqoriya səhifəsinin gridi — ana səhifə ilə EYNİ mənbədən (`useCategoryList`):
@@ -34,9 +35,12 @@ export function CategoriesGrid({
 
   return (
     <>
+      {/* Platforma adı göstərilmir (bax `SHOW_PLATFORM_UI`) — yalnız say qalır.
+          Platforma seçimi qayıdarsa ad yenidən sətrin əvvəlinə düşür. */}
       {!isAll && (
         <p className="mb-4 text-sm text-muted-foreground">
-          {platformName} · {list.length}
+          {SHOW_PLATFORM_UI ? `${platformName} · ` : ""}
+          {list.length}
         </p>
       )}
 

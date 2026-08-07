@@ -8,6 +8,7 @@ import { Star, Heart, ShoppingCart, ChevronDown, X, Search } from "lucide-react"
 import { useCart } from "@/context/cart-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { useLang } from "@/context/lang-context";
+import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 import type { ProductDTO } from "@/lib/data/catalog";
 import { formatMoney } from "@/lib/format";
 import { PRODUCT_BLUR } from "@/lib/image-placeholder";
@@ -293,7 +294,7 @@ export function ProductsFilter({
       const next = page + 1;
       const params = new URLSearchParams({ page: String(next) });
       if (q) params.set("q", q);
-      if (platformParam) params.set("platform", platformParam);
+      if (SHOW_PLATFORM_UI && platformParam) params.set("platform", platformParam);
       if (catParam) params.set("cat", catParam);
 
       const res = await fetch(`/api/search?${params.toString()}`);

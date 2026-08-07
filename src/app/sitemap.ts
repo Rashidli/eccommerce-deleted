@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/seo/jsonld";
 import {
   enabledSourceWhere,
   enabledPlatformKeyWhere,
+  categoryHref,
 } from "@/lib/platform-visibility";
 
 // Dinamik sitemap — məhsullar və kateqoriyalar DB-dən (qayda #4, #7).
@@ -68,10 +69,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     })),
     ...platformCategories.map((c) => ({
-      // Kateqoriya baxışı `/products?platform=&cat=` ünvanındadır (ayrıca route yox).
-      url: `${SITE_URL}/products?platform=${encodeURIComponent(
-        c.platformKey,
-      )}&cat=${encodeURIComponent(c.externalId)}`,
+      // Kateqoriya baxışının ayrıca route-u yoxdur — sorğu parametrindədir.
+      url: `${SITE_URL}${categoryHref(c.platformKey, c.externalId)}`,
       lastModified: c.updatedAt,
       changeFrequency: "weekly" as const,
       priority: 0.6,

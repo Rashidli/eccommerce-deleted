@@ -115,9 +115,11 @@ export function ProductGrid({ products }: { products: Product[] }) {
             </div>
 
             <div className="pt-2 space-y-0.5 md:p-3 md:space-y-1">
-              <p className="hidden text-[11px] text-muted-foreground uppercase tracking-wider md:block">
-                {product.brand}
-              </p>
+              {product.brand && (
+                <p className="hidden text-[11px] text-muted-foreground uppercase tracking-wider md:block">
+                  {product.brand}
+                </p>
+              )}
               <h3 className="text-xs font-medium text-brand-ink truncate md:text-sm md:group-hover:text-brand md:transition-colors">
                 {product.name}
               </h3>

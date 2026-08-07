@@ -21,6 +21,41 @@
 export const ENABLED_PLATFORMS: readonly string[] = ["1688"];
 
 /**
+ * PLATFORMA UI-ı MÜŞTƏRİYƏ GÖRÜNSÜNMÜ.
+ *
+ * `false` → alıcı platforma anlayışını ÜMUMİYYƏTLƏ görmür:
+ *   · axtarış barında platforma seçicisi (çip/tab) yoxdur;
+ *   · ana səhifədə "Bütün platformalar" bölməsi yoxdur;
+ *   · məhsul kartında platforma nişanı (badge) yoxdur.
+ *
+ * ARXA PLAN DƏYİŞMİR: axtarış, kateqoriya baxışı və import yenə
+ * `ENABLED_PLATFORMS` (1688) üzərindən işləyir — sadəcə mağaza tək brend kimi
+ * görünür, aqreqator kimi yox.
+ *
+ * Bu, `ENABLED_PLATFORMS`-dan AYRI qərardır: ora "hansı platforma işləyir"
+ * sualına cavab verir, bu isə "alıcı bunu görürmü" sualına. Sabah ikinci
+ * platforma açılsa, seçicini geri qaytarmaq üçün burada `true` yazmaq kifayətdir.
+ */
+export const SHOW_PLATFORM_UI = false;
+
+/** Platforma göstərilmədikdə istifadə olunan defolt açar. */
+export const DEFAULT_PLATFORM = ENABLED_PLATFORMS[0] ?? "1688";
+
+/**
+ * Kateqoriya baxışı ünvanı.
+ *
+ * Platforma UI-ı gizlidirsə `platform=` parametri ÜNVANA YAZILMIR — tək
+ * platforma onsuz da defoltdur (`products/page.tsx` onu özü seçir), ünvan
+ * sətrində tədarükçünün adını göstərməyin isə mənası yoxdur.
+ */
+export function categoryHref(platformKey: string, categoryId: string): string {
+  const cat = encodeURIComponent(categoryId);
+  return SHOW_PLATFORM_UI
+    ? `/products?platform=${encodeURIComponent(platformKey)}&cat=${cat}`
+    : `/products?cat=${cat}`;
+}
+
+/**
  * Verilmiş platforma açarı gizlədilibmi?
  *
  * `null`/boş MƏNBƏSİZ deməkdir (əl ilə admin panelindən əlavə edilmiş məhsul) —

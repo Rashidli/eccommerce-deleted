@@ -3,6 +3,7 @@ import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { pickLang } from "@/lib/data/pick-lang";
 import type { Lang } from "@/lib/i18n";
+import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 
 /**
  * SEO üçün məhsul məlumatı.
@@ -113,7 +114,13 @@ async function buildProductSeo(
     description: toPlainText(pickLang(p, "desc", lang) || p.description),
     image: p.image,
     images: gallery.length > 0 ? gallery : p.image ? [p.image] : [],
-    brand: p.brand,
+    // Platformadan gələn "brend" 1688-də elə platformanın öz adıdır — JSON-LD
+    // Google-a düşür, ona görə burada da təmizlənir (bax `brandLabel`).
+    brand:
+      !SHOW_PLATFORM_UI &&
+      (p.brand ?? "").trim().toLowerCase() === (p.source ?? "").toLowerCase()
+        ? ""
+        : p.brand,
     sku: p.sku ?? p.externalId ?? null,
     priceCents: p.priceCents,
     currency: p.currency,

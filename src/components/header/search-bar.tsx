@@ -12,6 +12,7 @@ import {
   type Platform,
 } from "@/context/search-context";
 import { PlatformChip } from "@/components/platform-chip";
+import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 import type { HomeCategoryDTO } from "@/lib/data/catalog";
 
 /**
@@ -89,7 +90,11 @@ export function SearchBar({
     const q = (value ?? query).trim();
     if (!q) return;
     const params = new URLSearchParams({ q });
-    if (platform !== ALL_PLATFORMS) params.set("platform", platform);
+    // Platforma UI-ı gizlidirsə ünvana da yazılmır — istifadəçi seçim
+    // etmədiyi bir şeyi linkdə görməməlidir (server defolta düşür).
+    if (SHOW_PLATFORM_UI && platform !== ALL_PLATFORMS) {
+      params.set("platform", platform);
+    }
     setFocused(false);
     router.push(`/products?${params.toString()}`);
   };
@@ -130,8 +135,10 @@ export function SearchBar({
   return (
     <div ref={boxRef} className="relative w-full max-w-4xl flex-1">
       <div className="flex w-full items-center gap-1 rounded-full border border-border bg-secondary/60 py-1.5 pl-2 pr-2 transition-colors focus-within:border-brand focus-within:bg-background">
-        {/* Görünən platforma tabları — brend logoları ilə */}
-        {!compact && (
+        {/* Görünən platforma tabları — brend logoları ilə.
+            Tək platforma qaldığı üçün seçici gizlidir (SHOW_PLATFORM_UI):
+            bir seçimli filtr seçim deyil, sadəcə yer tutur. */}
+        {SHOW_PLATFORM_UI && !compact && (
           <>
             <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
               {platforms.map((p) => (

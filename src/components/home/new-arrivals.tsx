@@ -114,9 +114,11 @@ export function NewArrivals({ products }: { products: ProductDTO[] }) {
 
               {/* Info */}
               <div className="p-3 space-y-1">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
-                  {product.brand}
-                </p>
+                {product.brand && (
+                  <p className="text-[11px] text-muted-foreground uppercase tracking-wider">
+                    {product.brand}
+                  </p>
+                )}
                 <h3 className="text-sm font-medium text-brand-ink truncate group-hover:text-brand transition-colors">
                   {product.name}
                 </h3>

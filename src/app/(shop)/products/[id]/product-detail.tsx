@@ -378,15 +378,19 @@ export function ProductDetail({
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <span
-                className="mb-3 inline-block rounded-full px-3 py-1 text-xs font-bold"
-                style={{
-                  backgroundColor: product.sourceBadgeBg ?? "var(--color-brand)",
-                  color: product.sourceBadgeFg ?? "#fff",
-                }}
-              >
-                {product.brand}
-              </span>
+              {/* Brend nişanı — brend yoxdursa boş pill qalmasın.
+                  (1688-də brend sahəsi olmur, bax `brandLabel`.) */}
+              {product.brand && (
+                <span
+                  className="mb-3 inline-block rounded-full px-3 py-1 text-xs font-bold"
+                  style={{
+                    backgroundColor: product.sourceBadgeBg ?? "var(--color-brand)",
+                    color: product.sourceBadgeFg ?? "#fff",
+                  }}
+                >
+                  {product.brand}
+                </span>
+              )}
               <h1 className="text-3xl font-bold text-brand-ink">{product.name}</h1>
             </div>
 
@@ -662,9 +666,11 @@ export function ProductDetail({
                       <Heart className={`h-4 w-4 ${isInWishlist(item.id) ? "fill-current" : ""}`} />
                     </button>
 
-                    <span className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-brand to-purple-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
-                      {item.brand}
-                    </span>
+                    {item.brand && (
+                      <span className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-brand to-purple-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
+                        {item.brand}
+                      </span>
+                    )}
 
                     <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 translate-y-0 sm:translate-y-full sm:group-hover:translate-y-0 transition-transform duration-300">
                       <button

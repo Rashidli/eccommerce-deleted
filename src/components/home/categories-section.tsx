@@ -5,6 +5,7 @@ import { useLang } from "@/context/lang-context";
 import { CategoryTile } from "@/components/category-tile";
 import { useCategoryList } from "@/lib/use-category-list";
 import { SectionHeading } from "./section-heading";
+import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 
 /**
  * Kateqoriyalar seçilmiş platformaya görə dəyişir:
@@ -28,8 +29,10 @@ export function CategoriesSection({
   return (
     <section>
       <SectionHeading
+        // Platforma adı başlığa yazılmır: müştəri tədarükçünü görməməlidir
+        // (bax `SHOW_PLATFORM_UI`). Açılsa yenidən "Kateqoriyalar · X" olur.
         title={
-          isAll
+          isAll || !SHOW_PLATFORM_UI
             ? t.sections.categories
             : `${t.sections.categories} · ${platformName}`
         }

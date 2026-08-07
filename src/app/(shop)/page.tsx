@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import { getLang } from "@/lib/server-lang";
 import { dict } from "@/lib/i18n";
 import { alternatesFor } from "@/lib/seo/jsonld";
+import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 import {
   getTrendingProducts,
   getNewArrivals,
@@ -87,7 +88,7 @@ export default async function HomePage() {
           </div>
 
           <main className="mt-10 min-w-0 space-y-12">
-            <PlatformsStrip platforms={platforms} />
+            {SHOW_PLATFORM_UI && <PlatformsStrip platforms={platforms} />}
             <CategoriesSection
               categories={categories}
               platformCategories={platformCategories}

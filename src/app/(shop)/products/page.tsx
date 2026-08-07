@@ -5,6 +5,7 @@ import { getPlatform } from "@/lib/server-platform";
 import { dict } from "@/lib/i18n";
 import { JsonLd, breadcrumbLd, alternatesFor } from "@/lib/seo/jsonld";
 import { getPlatformCategorySeo } from "@/lib/seo/product-seo";
+import { DEFAULT_PLATFORM, categoryHref } from "@/lib/platform-visibility";
 import {
   getProducts,
   searchProducts,
@@ -52,17 +53,19 @@ export async function generateMetadata({
 
   // 2) KATEQORİYA baxışı — indekslənən səth, adı DB-dən.
   if (cat) {
-    const platformKey = platform && platform !== "all" ? platform : "1688";
+    const platformKey =
+      platform && platform !== "all" ? platform : DEFAULT_PLATFORM;
     const category = await getPlatformCategorySeo(platformKey, cat, lang);
     if (category) {
-      const path = `/products?platform=${encodeURIComponent(
-        platformKey,
-      )}&cat=${encodeURIComponent(cat)}`;
+      const path = categoryHref(platformKey, cat);
       return {
         title: t.seo.categoryBrowseTitle.replace("{category}", category.name),
-        description: t.seo.categoryBrowseDescription
-          .replace("{category}", category.name)
-          .replace("{platform}", platformKey),
+        // Qeyd: mətndə `{platform}` yoxdur — tədarükçünün adı meta təsvirdə
+        // (yəni axtarış nəticələrində) görünməməlidir.
+        description: t.seo.categoryBrowseDescription.replace(
+          "{category}",
+          category.name,
+        ),
         alternates: alternatesFor(path),
         openGraph: { type: "website", title: category.name, url: path },
       };
@@ -190,9 +193,7 @@ async function ProductsContent({
             { name: t.pages.categories, url: "/categories" },
             {
               name: categorySeo.name,
-              url: `/products?platform=${encodeURIComponent(
-                importPlatform,
-              )}&cat=${encodeURIComponent(cat!)}`,
+              url: categoryHref(importPlatform, cat!),
             },
           ])}
         />

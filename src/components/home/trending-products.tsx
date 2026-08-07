@@ -100,10 +100,12 @@ export function TrendingProducts({ products }: { products: ProductDTO[] }) {
                     <Heart className={`h-4 w-4 ${isInWishlist(product.id) ? "fill-current" : ""}`} />
                   </button>
 
-                  {/* Brand Badge */}
-                  <span className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-brand to-purple-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
-                    {product.brand}
-                  </span>
+                  {/* Brand Badge — brend yoxdursa boş pill çıxmasın */}
+                  {product.brand && (
+                    <span className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-brand to-purple-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md">
+                      {product.brand}
+                    </span>
+                  )}
 
                   {/* Quick Add Button - always visible on mobile, hover on desktop */}
                   <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 translate-y-0 sm:translate-y-full sm:group-hover:translate-y-0 transition-transform duration-300">

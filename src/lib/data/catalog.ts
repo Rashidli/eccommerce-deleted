@@ -16,6 +16,9 @@ import {
   enabledSourceWhere,
   enabledPlatformKeyWhere,
   isPlatformDisabled,
+  SHOW_PLATFORM_UI,
+  ENABLED_PLATFORMS,
+  categoryHref,
 } from "@/lib/platform-visibility";
 
 /* ------------------------------ DTO tipləri ------------------------------ */
@@ -180,7 +183,11 @@ function toProductDTO(
     oldPriceCents: oldPrice?.cents ?? undefined,
     rating: p.rating,
     reviewCount: p.reviewCount || undefined,
-    brand: p.brand,
+    // 1688 axtarış cavabında BREND YOXDUR — idxal zamanı bu sahəyə mənbənin
+    // öz adı ("1688") düşür. O, brend deyil; kartda brend sətrində göstərilsə
+    // müştəri tədarükçünü görür. Platforma adı gələndə boş qaytarırıq —
+    // render yerləri boş brendi ümumiyyətlə çıxarmır.
+    brand: brandLabel(p.brand, p.source),
     // Şəkillər CDN-in kiçildilmiş variantı ilə gəlir — `next/image` nəhəng
     // orijinalı Çindən endirməsin (bax: `@/lib/cdn-image`).
     img: cdnImage(p.image, CARD_SOURCE_WIDTH),
@@ -193,9 +200,11 @@ function toProductDTO(
     category: categoryName,
     inStock: p.stock > 0,
     source: p.source ?? undefined,
-    sourceBadgeBg: platformStyle(p.source)?.bg || undefined,
-    sourceBadgeFg: platformStyle(p.source)?.fg || undefined,
-    sourceLabel: platformStyle(p.source)?.label || undefined,
+    // Platforma nişanı yalnız UI açıq olanda doldurulur. Boş qalanda
+    // `product-grid` nişanı ümumiyyətlə render etmir (`sourceBadgeBg` şərti).
+    sourceBadgeBg: SHOW_PLATFORM_UI ? platformStyle(p.source)?.bg || undefined : undefined,
+    sourceBadgeFg: SHOW_PLATFORM_UI ? platformStyle(p.source)?.fg || undefined : undefined,
+    sourceLabel: SHOW_PLATFORM_UI ? platformStyle(p.source)?.label || undefined : undefined,
     colorPreview: colorPreviewOf(p.attributes),
   };
 }
@@ -245,6 +254,22 @@ function platformWhere(platform?: string) {
   return { source: platform };
 }
 
+/**
+ * Göstəriləcək brend adı.
+ *
+ * Platformadan gələn "brend" bəzən elə platformanın ÖZ adıdır (1688 belədir:
+ * cavabda brend sahəsi yoxdur, normalizer mənbə adını yazır). Belə dəyər
+ * müştəriyə brend kimi göstərilməməlidir.
+ */
+function brandLabel(brand: string | null, source: string | null): string {
+  const b = (brand ?? "").trim();
+  if (!b) return "";
+  if (!SHOW_PLATFORM_UI && b.toLowerCase() === (source ?? "").toLowerCase()) {
+    return "";
+  }
+  return b;
+}
+
 /* -------------------- platforma nişanı (badge) üslubu -------------------- */
 /**
  * Platforma rəngləri DB-dədir (qayda #4) — kodda sabit map yoxdur.
@@ -260,6 +285,9 @@ let platformStyleCache: { at: number; map: Map<string, PlatformStyle> } | null =
 
 /** Keşi doldurur — siyahı funksiyaları `toProductDTO`-dan ƏVVƏL çağırır. */
 async function warmPlatformStyles(): Promise<void> {
+  // Nişan göstərilmirsə rəngləri çəkməyin mənası yoxdur — hər siyahı
+  // render-ində bir DB sorğusu qənaət olunur.
+  if (!SHOW_PLATFORM_UI) return;
   if (
     platformStyleCache &&
     Date.now() - platformStyleCache.at < PLATFORM_STYLE_TTL_MS
@@ -436,7 +464,7 @@ export async function getPlatformCategories(
     nameEn: c.nameEn ?? undefined,
     // AI ilə generasiya olunmuş şəkil (yoxdursa UI ikona düşür).
     img: c.image ?? "",
-    href: `/products?platform=${platformKey}&cat=${c.externalId}`,
+    href: categoryHref(platformKey, c.externalId),
   }));
 }
 
@@ -470,7 +498,7 @@ export async function getPlatformSubcategories(
       name: pickLang(c, "name", lang) || c.nameZh || c.externalId,
       nameEn: c.nameEn ?? undefined,
       img: c.image ?? "",
-      href: `/products?platform=${platformKey}&cat=${c.externalId}`,
+      href: categoryHref(platformKey, c.externalId),
     });
   }
   return grouped;
@@ -500,7 +528,7 @@ export async function getSidebarSubcategories(
     name: pickLang(c, "name", lang) || c.nameZh || c.externalId,
     nameEn: c.nameEn ?? undefined,
     img: c.image ?? "",
-    href: `/products?platform=${platformKey}&cat=${c.externalId}`,
+    href: categoryHref(platformKey, c.externalId),
   });
 
   const children = await prisma.platformCategory.findMany({
@@ -710,9 +738,12 @@ export async function getBrands(platform?: string): Promise<string[]> {
     take: 200,
   });
 
+  // Platforma açarı brend deyil (bax `brandLabel`) — filtr siyahısına düşməsin.
+  const platformKeys = new Set(ENABLED_PLATFORMS.map((k) => k.toLowerCase()));
   const brands = rows
     .map((r) => r.brand)
-    .filter((b) => b && b.trim().length > 0);
+    .filter((b) => b && b.trim().length > 0)
+    .filter((b) => SHOW_PLATFORM_UI || !platformKeys.has(b.trim().toLowerCase()));
 
   // Tək variant filtr deyil — seçim təklif etmək yanlış təəssürat yaradır.
   return brands.length > 1 ? brands : [];
