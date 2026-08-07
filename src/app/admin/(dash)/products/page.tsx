@@ -8,6 +8,7 @@ import { Badge, Card, EmptyState, PageHeader, PrimaryLink, Table, Td } from "@/c
 import { Pagination } from "@/components/admin/pagination";
 import { DeleteButton } from "@/components/admin/form-actions";
 import { deleteProduct } from "./actions";
+import { enabledSourceWhere } from "@/lib/platform-visibility";
 
 const PAGE_SIZE = 50;
 
@@ -41,6 +42,8 @@ export default async function AdminProductsPage({
   // hər açılışda şəkilləri ilə birgə render olunurdu. Süzgəc və səhifələmə
   // indi Postgres-dədir.
   const where: Prisma.ProductWhereInput = {
+    // Gizlədilmiş platformaların məhsulları admin siyahısında da görünmür.
+    ...enabledSourceWhere(),
     ...(source ? { source } : {}),
     ...(status === "active" ? { isActive: true } : {}),
     ...(status === "hidden" ? { isActive: false } : {}),

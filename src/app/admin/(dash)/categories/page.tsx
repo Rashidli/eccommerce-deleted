@@ -7,6 +7,7 @@ import { Card, EmptyState, PageHeader, PrimaryLink, Table, Td } from "@/componen
 import { DeleteButton } from "@/components/admin/form-actions";
 import { VisibilityToggle } from "../platforms/toggle";
 import { deleteCategory } from "./actions";
+import { DISABLED_PLATFORMS } from "@/lib/platform-visibility";
 
 /**
  * KATEQORİYALAR — İKİ FƏRQLİ ŞEY, BİR SƏHİFƏDƏ AYRI-AYRI.
@@ -38,6 +39,7 @@ export default async function AdminCategoriesPage({
 
   // Platforma siyahısı BAZADAN — kodda sabit deyil (qayda #4).
   const platforms = await prisma.platform.findMany({
+    where: { key: { notIn: [...DISABLED_PLATFORMS] } },
     orderBy: { sortOrder: "asc" },
     select: { key: true, nameAz: true, isActive: true },
   });

@@ -377,7 +377,7 @@ export const dict: Record<Lang, Dict> = {
     hero: {
       title: "Qlobal trendləri kəşf et",
       subtitle: "Hamısı bir yerdə",
-      description: "1688, Taobao və Zara məhsulları.\nEtibar edə biləcəyin keyfiyyət.",
+      description: "1688 məhsulları.\nEtibar edə biləcəyin keyfiyyət.",
       cta: "İndi al",
     },
     promo: {
@@ -402,7 +402,7 @@ export const dict: Record<Lang, Dict> = {
       trending: "Trend məhsullar",
       newArrivals: "Yeni gələnlər",
       platforms: "Bütün platformalar bir yerdə",
-      platformsSub: "1688, Taobao və Amazon-dan milyonlarla məhsul",
+      platformsSub: "1688-dən milyonlarla məhsul",
       explore: "Kəşf et",
       noPlatformCategories: "Bu platforma kateqoriya ağacı təqdim etmir — axtarışdan istifadə edin",
     },
@@ -618,13 +618,13 @@ export const dict: Record<Lang, Dict> = {
     seo: {
       homeTitle: "E-Commerce — Qlobal trendləri kəşf et",
       homeDescription:
-        "1688, Taobao və Zara-dan minlərlə məhsul — ən yaxşı qiymətə, Azərbaycana çatdırılma.",
+        "1688-dən minlərlə məhsul — ən yaxşı qiymətə, Azərbaycana çatdırılma.",
       categoriesTitle: "Bütün kateqoriyalar",
       categoriesDescription:
         "Geyim, ayaqqabı, elektronika, ev və daha çox — platformalar üzrə bütün kateqoriyalar.",
       productsTitle: "Bütün məhsullar",
       productsDescription:
-        "1688, Taobao və Zara məhsulları bir yerdə — qiymətə, brendə və kateqoriyaya görə süz.",
+        "1688 məhsulları bir yerdə — qiymətə, brendə və kateqoriyaya görə süz.",
       searchTitle: "“{query}” üzrə axtarış nəticələri",
       categoryBrowseTitle: "{category}",
       categoryBrowseDescription:
@@ -707,7 +707,7 @@ export const dict: Record<Lang, Dict> = {
     hero: {
       title: "Discover Global Trends",
       subtitle: "All in One Place",
-      description: "Products from 1688, Taobao & Zara.\nQuality you can trust.",
+      description: "Products from 1688.\nQuality you can trust.",
       cta: "Shop Now",
     },
     promo: {
@@ -732,7 +732,7 @@ export const dict: Record<Lang, Dict> = {
       trending: "Trending Products",
       newArrivals: "New Arrivals",
       platforms: "All platforms in one place",
-      platformsSub: "Millions of products from 1688, Taobao & Amazon",
+      platformsSub: "Millions of products from 1688",
       explore: "Explore",
       noPlatformCategories: "This platform doesn't provide a category tree — use search instead",
     },
@@ -948,13 +948,13 @@ export const dict: Record<Lang, Dict> = {
     seo: {
       homeTitle: "E-Commerce — Discover global trends",
       homeDescription:
-        "Thousands of products from 1688, Taobao and Zara — best prices, delivered to Azerbaijan.",
+        "Thousands of products from 1688 — best prices, delivered to Azerbaijan.",
       categoriesTitle: "All categories",
       categoriesDescription:
         "Clothing, shoes, electronics, home and more — every category across all platforms.",
       productsTitle: "All products",
       productsDescription:
-        "Products from 1688, Taobao and Zara in one place — filter by price, brand and category.",
+        "Products from 1688 in one place — filter by price, brand and category.",
       searchTitle: "Search results for “{query}”",
       categoryBrowseTitle: "{category}",
       categoryBrowseDescription:
@@ -1037,7 +1037,7 @@ export const dict: Record<Lang, Dict> = {
     hero: {
       title: "Откройте мировые тренды",
       subtitle: "Всё в одном месте",
-      description: "Товары с 1688, Taobao и Zara.\nКачество, которому можно доверять.",
+      description: "Товары с 1688.\nКачество, которому можно доверять.",
       cta: "Купить",
     },
     promo: {
@@ -1062,7 +1062,7 @@ export const dict: Record<Lang, Dict> = {
       trending: "Популярные товары",
       newArrivals: "Новинки",
       platforms: "Все площадки в одном месте",
-      platformsSub: "Миллионы товаров с 1688, Taobao и Amazon",
+      platformsSub: "Миллионы товаров с 1688",
       explore: "Смотреть",
       noPlatformCategories: "Эта платформа не предоставляет дерево категорий — используйте поиск",
     },
@@ -1278,13 +1278,13 @@ export const dict: Record<Lang, Dict> = {
     seo: {
       homeTitle: "E-Commerce — Открой мировые тренды",
       homeDescription:
-        "Тысячи товаров с 1688, Taobao и Zara — лучшие цены, доставка в Азербайджан.",
+        "Тысячи товаров с 1688 — лучшие цены, доставка в Азербайджан.",
       categoriesTitle: "Все категории",
       categoriesDescription:
         "Одежда, обувь, электроника, дом и другое — все категории по всем платформам.",
       productsTitle: "Все товары",
       productsDescription:
-        "Товары с 1688, Taobao и Zara в одном месте — фильтруй по цене, бренду и категории.",
+        "Товары с 1688 в одном месте — фильтруй по цене, бренду и категории.",
       searchTitle: "Результаты поиска по запросу «{query}»",
       categoryBrowseTitle: "{category}",
       categoryBrowseDescription:

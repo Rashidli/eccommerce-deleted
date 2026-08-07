@@ -12,6 +12,7 @@ import {
   dbCategoryProductIds,
   importPlatformSale,
 } from "@/lib/partzona/search";
+import { isPlatformDisabled } from "@/lib/platform-visibility";
 
 // Sonsuz scroll üçün növbəti səhifə (qayda #2 — platformaya sorğu yalnız backend-dən).
 //  - `q` varsa: Partzona-nın həmin səhifəsi çəkilir → DB-yə upsert → qaytarılır
@@ -41,8 +42,10 @@ export async function GET(request: Request) {
   }
 
   const lang = await getLang();
-  const platform =
-    platformParam && platformParam !== "all" ? platformParam : "1688";
+  // Gizlədilmiş platforma (`?platform=taobao`) əl ilə yazılsa belə CANLI sorğu
+  // getmir — yoxsa bağlanmış platformanın məhsulları DB-yə import olunardı.
+  const requested = isPlatformDisabled(platformParam) ? "" : platformParam;
+  const platform = requested && requested !== "all" ? requested : "1688";
 
   if (query) {
     const live = await importPartzonaSearch({

@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { SITE_URL } from "@/lib/seo/jsonld";
+import {
+  enabledSourceWhere,
+  DISABLED_PLATFORMS,
+} from "@/lib/platform-visibility";
 
 // Dinamik sitemap — məhsullar və kateqoriyalar DB-dən (qayda #4, #7).
 //
@@ -11,15 +15,17 @@ const PRODUCT_LIMIT = 20000;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, categories, platforms] = await Promise.all([
+    // Gizlədilmiş platformaların məhsulları indeksə verilmir — səhifələri
+    // onsuz da 404 qaytarır, sitemap-da qalsalar tarama xətası yaradardılar.
     prisma.product.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...enabledSourceWhere() },
       select: { id: true, updatedAt: true },
       take: PRODUCT_LIMIT,
       orderBy: { updatedAt: "desc" },
     }),
     prisma.category.findMany({ select: { slug: true, updatedAt: true } }),
     prisma.platform.findMany({
-      where: { isActive: true },
+      where: { isActive: true, key: { notIn: [...DISABLED_PLATFORMS] } },
       select: { key: true },
     }),
   ]);

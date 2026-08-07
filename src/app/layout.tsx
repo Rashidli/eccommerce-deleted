@@ -15,22 +15,22 @@ export const metadata: Metadata = {
     template: "%s · E-Commerce",
   },
   description:
-    "1688, Taobao və digər platformalardan məhsullar — ən yaxşı qiymətə, Azərbaycana çatdırılma.",
+    "1688 platformasından məhsullar — ən yaxşı qiymətə, Azərbaycana çatdırılma.",
   applicationName: "E-Commerce",
-  keywords: ["1688", "Taobao", "dropshipping", "onlayn alış", "Azərbaycan"],
+  keywords: ["1688", "dropshipping", "onlayn alış", "Azərbaycan"],
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "E-Commerce",
     title: "E-Commerce — Qlobal trendləri kəşf et",
     description:
-      "1688, Taobao və digər platformalardan məhsullar — ən yaxşı qiymətə.",
+      "1688 platformasından məhsullar — ən yaxşı qiymətə.",
     url: "/",
   },
   twitter: {
     card: "summary_large_image",
     title: "E-Commerce — Qlobal trendləri kəşf et",
-    description: "1688, Taobao və digər platformalardan məhsullar.",
+    description: "1688 platformasından məhsullar.",
   },
   // iOS-da ana ekrandan açılanda brauzer paneli göstərilmir.
   appleWebApp: {

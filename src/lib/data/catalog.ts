@@ -12,6 +12,11 @@ import {
   CARD_SOURCE_WIDTH,
   GALLERY_SOURCE_WIDTH,
 } from "@/lib/cdn-image";
+import {
+  enabledSourceWhere,
+  isPlatformDisabled,
+  DISABLED_PLATFORMS,
+} from "@/lib/platform-visibility";
 
 /* ------------------------------ DTO tipləri ------------------------------ */
 // Storefront komponentlərinin gözlədiyi şəkil (köhnə mock `Product` ilə uyğun).
@@ -227,9 +232,17 @@ function colorPreviewOf(
   return out.length > 0 ? out : undefined;
 }
 
-/** "all" / boş → filtr yoxdur; əks halda məhsul mənbəyi (Product.source) üzrə süzülür. */
+/**
+ * "all" / boş → filtr yoxdur; əks halda məhsul mənbəyi (Product.source) üzrə süzülür.
+ *
+ * Gizlədilmiş platforma açarı gəlsə (köhnə cookie, əl ilə yazılmış URL) heç nə
+ * qaytarılmır — `__none__` mövcud olmayan mənbədir. Belə halda boş siyahı
+ * göstərmək gizli platformanın məhsullarını sızdırmaqdan doğrudur.
+ */
 function platformWhere(platform?: string) {
-  return platform && platform !== "all" ? { source: platform } : {};
+  if (!platform || platform === "all") return {};
+  if (isPlatformDisabled(platform)) return { source: "__none__" };
+  return { source: platform };
 }
 
 /* -------------------- platforma nişanı (badge) üslubu -------------------- */
@@ -297,7 +310,7 @@ function platformStyle(source?: string | null): PlatformStyle | undefined {
 export async function getTrendingProducts(lang: Lang, take = 10): Promise<ProductDTO[]> {
   await warmCaches();
   const rows = await prisma.product.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...enabledSourceWhere() },
     orderBy: [
       { salesCount: { sort: "desc", nulls: "last" } },
       { rating: "desc" },
@@ -317,7 +330,7 @@ export async function getNewArrivals(
 ): Promise<ProductDTO[]> {
   await warmCaches();
   const rows = await prisma.product.findMany({
-    where: { isActive: true },
+    where: { isActive: true, ...enabledSourceWhere() },
     // Sabit ikinci açar: eyni `createdAt`-lı sətirlər səhifələr arasında
     // yerini dəyişməsin, yoxsa scroll təkrar/atlama verir.
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
@@ -331,6 +344,10 @@ export async function getProductById(id: string, lang: Lang): Promise<ProductDTO
   await warmCaches();
   const p = await prisma.product.findUnique({ where: { id }, include: { category: true } });
   if (!p) return null;
+  // Gizlədilmiş platformanın məhsuluna birbaşa link ilə girmək olmaz — səhifə
+  // 404 verir. Sifariş tarixçəsi buna toxunmur: orada `OrderItem`-dəki ad/qiymət
+  // ANI saxlanır, məhsul sətri oxunmur.
+  if (isPlatformDisabled(p.source)) return null;
   const categoryName = p.category ? pickLang(p.category, "name", lang) : undefined;
   const dto = toProductDTO(p, lang, categoryName);
 
@@ -398,6 +415,8 @@ export async function getPlatformCategories(
    */
   scope: "all" | "nav" | "home" = "all",
 ): Promise<HomeCategoryDTO[]> {
+  // Gizlədilmiş platformanın kateqoriya ağacı nav-da/ana səhifədə görünmür.
+  if (isPlatformDisabled(platformKey)) return [];
   const rows = await prisma.platformCategory.findMany({
     where: {
       platformKey,
@@ -433,6 +452,7 @@ export async function getPlatformSubcategories(
   // (məs. Zara "Uşaqlar"da 59 var). 60 praktik yuxarı həddir.
   perParent = 60,
 ): Promise<Record<string, HomeCategoryDTO[]>> {
+  if (isPlatformDisabled(platformKey)) return {};
   if (parentIds.length === 0) return {};
 
   const rows = await prisma.platformCategory.findMany({
@@ -467,6 +487,7 @@ export async function getSidebarSubcategories(
   categoryId: string,
   take = 40,
 ): Promise<HomeCategoryDTO[]> {
+  if (isPlatformDisabled(platformKey)) return [];
   const toDTO = (c: {
     externalId: string;
     nameAz: string | null;
@@ -504,10 +525,15 @@ export async function getSidebarSubcategories(
 
 /* ------------------------------ platformalar ------------------------------ */
 
-/** Yalnız aktiv platformalar (amazon isActive=false → görünmür). */
+/**
+ * Yalnız aktiv platformalar (amazon isActive=false → görünmür).
+ *
+ * `DISABLED_PLATFORMS` əlavə qorumadır: DB-də səhvən `isActive=true` edilsə
+ * belə gizli platforma storefront-a çıxmır (bax `@/lib/platform-visibility`).
+ */
 export async function getActivePlatforms(lang: Lang): Promise<PlatformDTO[]> {
   const rows = await prisma.platform.findMany({
-    where: { isActive: true },
+    where: { isActive: true, key: { notIn: [...DISABLED_PLATFORMS] } },
     orderBy: { sortOrder: "asc" },
   });
   return rows.map((p) => ({
@@ -567,6 +593,7 @@ export async function getProducts(opts: {
   const rows = await prisma.product.findMany({
     where: {
       isActive: true,
+      ...enabledSourceWhere(),
       ...platformWhere(opts.platform),
       ...(opts.sourceCategoryId
         ? { sourceCategoryId: opts.sourceCategoryId }
@@ -603,7 +630,7 @@ export async function getProductsByCategory(
   // LİMİT MƏCBURİDİR — kataloqda minlərlə məhsul var (ölçüldü: 3787).
   // Limitsiz sorğu bütün kateqoriyanı yaddaşa çəkib DTO-ya çevirirdi.
   const rows = await prisma.product.findMany({
-    where: { isActive: true, categoryId: cat.id },
+    where: { isActive: true, categoryId: cat.id, ...enabledSourceWhere() },
     orderBy: { createdAt: "desc" },
     take,
     skip,
@@ -625,6 +652,7 @@ export async function getDeals(
     where: {
       isActive: true,
       oldPriceCents: { not: null },
+      ...enabledSourceWhere(),
       ...platformWhere(platform),
     },
     // `id` ikinci açar kimi — səhifələmə sabit qalsın (bax: getNewArrivals).
@@ -649,7 +677,7 @@ export async function getProductsByIds(
   await warmCaches();
   if (ids.length === 0) return [];
   const rows = await prisma.product.findMany({
-    where: { id: { in: ids } },
+    where: { id: { in: ids }, ...enabledSourceWhere() },
     include: { category: true },
   });
   const byId = new Map(rows.map((r) => [r.id, r]));
@@ -676,7 +704,7 @@ export async function getBrands(platform?: string): Promise<string[]> {
   // (ölçüldü: 3787 sətir) çəkirdi. Aqreqasiya ilə eyni nəticə bazada alınır.
   const rows = await prisma.product.groupBy({
     by: ["brand"],
-    where: { isActive: true, ...platformWhere(platform) },
+    where: { isActive: true, ...enabledSourceWhere(), ...platformWhere(platform) },
     orderBy: { brand: "asc" },
     // Filtr siyahısıdır — 200 brend onsuz da UI-da göstərilə bilməz.
     take: 200,
@@ -698,7 +726,7 @@ export async function getRelatedProducts(
 ): Promise<ProductDTO[]> {
   await warmCaches();
   const rows = await prisma.product.findMany({
-    where: { isActive: true, id: { not: excludeId } },
+    where: { isActive: true, id: { not: excludeId }, ...enabledSourceWhere() },
     orderBy: { rating: "desc" },
     take,
   });
@@ -722,6 +750,9 @@ export async function searchProducts(opts: {
   const rows = await prisma.product.findMany({
     where: {
       isActive: true,
+      // Mənbə filtri `AND` içindədir — aşağıdakı `OR` (ad/brend axtarışı) ilə
+      // toqquşmasın deyə (eyni səviyyədə iki `OR` yazmaq olmaz).
+      ...enabledSourceWhere(),
       ...platformWhere(opts.platform),
       OR: [
         { name: { contains: q, mode: "insensitive" } },

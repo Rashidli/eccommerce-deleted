@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { isPlatformDisabled } from "@/lib/platform-visibility";
 
 export const PLATFORM_COOKIE = "ecommerce-platform";
 
@@ -19,6 +20,9 @@ export async function getPlatform(): Promise<string | undefined> {
   const value = store.get(PLATFORM_COOKIE)?.value;
   if (!value) return undefined;
   if (value === "all") return value;
+  // Gizlədilmiş platforma köhnə cookie-də qalıbsa, defolta qaytarırıq —
+  // yoxsa istifadəçi bağlanmış platformaya "yapışıb" qalırdı.
+  if (isPlatformDisabled(value)) return undefined;
 
   const exists = await prisma.platform.findFirst({
     where: { key: value, isActive: true },

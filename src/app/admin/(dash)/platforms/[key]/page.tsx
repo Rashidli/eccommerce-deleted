@@ -7,6 +7,7 @@ import { SubmitButton } from "@/components/admin/form-actions";
 import { getPlatformWarehouse } from "@/lib/platform-warehouse";
 import { updatePlatformWarehouse } from "../actions";
 import { VisibilityToggle } from "../toggle";
+import { isPlatformDisabled } from "@/lib/platform-visibility";
 
 // Platformanın ƏSAS kateqoriyaları — admin hansının nav zolağında, hansının
 // ana səhifədə görünəcəyini burada seçir. İki bayraq AYRIDIR (qayda #4:
@@ -24,6 +25,10 @@ export default async function AdminPlatformCategoriesPage({
 }) {
   const { key } = await params;
   const { error, ok } = await searchParams;
+
+  // Gizlədilmiş platformanın idarəetmə səhifəsi ünvanı əl ilə yazılsa da
+  // açılmır — siyahıdan çıxarmaq tək başına kifayət deyil.
+  if (isPlatformDisabled(key)) notFound();
 
   const platform = await prisma.platform.findUnique({ where: { key } });
   if (!platform) notFound();
