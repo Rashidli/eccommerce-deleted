@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { SITE_URL } from "@/lib/seo/jsonld";
 import {
   enabledSourceWhere,
-  DISABLED_PLATFORMS,
+  enabledPlatformKeyWhere,
 } from "@/lib/platform-visibility";
 
 // Dinamik sitemap — məhsullar və kateqoriyalar DB-dən (qayda #4, #7).
@@ -25,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
     prisma.category.findMany({ select: { slug: true, updatedAt: true } }),
     prisma.platform.findMany({
-      where: { isActive: true, key: { notIn: [...DISABLED_PLATFORMS] } },
+      where: { isActive: true, ...enabledPlatformKeyWhere() },
       select: { key: true },
     }),
   ]);

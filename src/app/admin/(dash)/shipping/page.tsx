@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { Card, PageHeader } from "@/components/admin/ui";
 import { saveShippingRule } from "./actions";
-import { DISABLED_PLATFORMS } from "@/lib/platform-visibility";
+import { enabledPlatformKeyWhere } from "@/lib/platform-visibility";
 
 // Platforma ÇATDIRILMA tarifləri.
 //
@@ -23,7 +23,7 @@ export default async function AdminShippingPage() {
 
   const [platforms, rules] = await Promise.all([
     prisma.platform.findMany({
-      where: { isActive: true, key: { notIn: [...DISABLED_PLATFORMS] } },
+      where: { isActive: true, ...enabledPlatformKeyWhere() },
       orderBy: { sortOrder: "asc" },
     }),
     prisma.platformShippingRule.findMany(),

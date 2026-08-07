@@ -7,7 +7,7 @@ import {
   saveExchangeRate,
   deleteExchangeRate,
 } from "./actions";
-import { DISABLED_PLATFORMS } from "@/lib/platform-visibility";
+import { enabledPlatformKeyWhere } from "@/lib/platform-visibility";
 
 /**
  * VALYUTA — göstəriş valyutası, marja və məzənnələr.
@@ -28,7 +28,7 @@ export default async function AdminCurrencyPage() {
     prisma.currencySettings.findUnique({ where: { id: "default" } }),
     prisma.exchangeRate.findMany({ orderBy: [{ base: "asc" }, { quote: "asc" }] }),
     prisma.platform.findMany({
-      where: { isActive: true, key: { notIn: [...DISABLED_PLATFORMS] } },
+      where: { isActive: true, ...enabledPlatformKeyWhere() },
       select: { key: true, currency: true },
     }),
   ]);

@@ -14,8 +14,8 @@ import {
 } from "@/lib/cdn-image";
 import {
   enabledSourceWhere,
+  enabledPlatformKeyWhere,
   isPlatformDisabled,
-  DISABLED_PLATFORMS,
 } from "@/lib/platform-visibility";
 
 /* ------------------------------ DTO tipləri ------------------------------ */
@@ -528,12 +528,12 @@ export async function getSidebarSubcategories(
 /**
  * Yalnız aktiv platformalar (amazon isActive=false → görünmür).
  *
- * `DISABLED_PLATFORMS` əlavə qorumadır: DB-də səhvən `isActive=true` edilsə
- * belə gizli platforma storefront-a çıxmır (bax `@/lib/platform-visibility`).
+ * Ağ siyahı əlavə qorumadır: DB-də səhvən `isActive=true` edilsə belə
+ * icazəsiz platforma storefront-a çıxmır (bax `@/lib/platform-visibility`).
  */
 export async function getActivePlatforms(lang: Lang): Promise<PlatformDTO[]> {
   const rows = await prisma.platform.findMany({
-    where: { isActive: true, key: { notIn: [...DISABLED_PLATFORMS] } },
+    where: { isActive: true, ...enabledPlatformKeyWhere() },
     orderBy: { sortOrder: "asc" },
   });
   return rows.map((p) => ({

@@ -1,32 +1,40 @@
 /**
  * PLATFORMA GÖRÜNÜRLÜYÜ — hansı platformalar saytda və admin panelində görünür.
  *
- * Burada sadalanan açarlar HƏR YERDƏN gizlədilir: storefront platforma zolağı,
- * filtrlər, məhsul siyahıları, axtarış, kateqoriya ağacı, sitemap və admin
- * panelinin platforma/kateqoriya/tarif səhifələri.
+ * AĞ SİYAHIDIR (qara siyahı deyil): yalnız burada sadalanan açarlar görünür,
+ * qalan HAMISI gizlidir. Səbəb — DB-yə yeni `Platform` sətri əlavə olunanda
+ * (import, seed, admin) qara siyahı onu avtomatik buraxardı; ağ siyahı isə
+ * susmaqla gizlədir. Yəni yeni platforma yalnız BİLƏRƏKDƏN açılır.
+ *
+ * Gizli platforma bu səthlərin heç birində görünmür: storefront platforma
+ * zolağı, filtrlər, məhsul siyahıları, axtarış, kateqoriya ağacı, sitemap və
+ * admin panelinin platforma/kateqoriya/tarif/valyuta səhifələri.
  *
  * İNTEQRASİYA KODU SİLİNMİR. `src/lib/partzona/platforms/<key>/` altındakı
- * servis, normalize və endpoint faylları toxunulmamış qalır; servis reyestri
- * (`platforms/index.ts`) də dəyişmir. Yəni bu, kod silmək deyil — yalnız
+ * servis, normalize və endpoint faylları, həmçinin servis reyestri
+ * (`platforms/index.ts`) toxunulmamış qalır. Bu, kod silmək deyil — yalnız
  * GÖRÜNÜŞÜN bağlanmasıdır.
  *
- * Yenidən açmaq: açarı aşağıdakı siyahıdan çıxar, `Platform.isActive`-i DB-də
- * `true` et və build al. Başqa heç nə lazım deyil.
- *
- * Qeyd: DB-dəki `Platform.isActive` bayrağı da paralel olaraq `false`-dur.
- * İkisi birlikdə işləyir — bu siyahı kod tərəfli qorumadır (admin panelindən
- * səhvən açılsa belə platforma görünmür), `isActive` isə data tərəflidir.
+ * Yenidən açmaq: açarı aşağıdakı siyahıya əlavə et, DB-də
+ * `Platform.isActive = true` qoy və build al. Başqa heç nə lazım deyil.
  */
-export const DISABLED_PLATFORMS: readonly string[] = ["taobao", "zara"];
+export const ENABLED_PLATFORMS: readonly string[] = ["1688"];
 
-/** Verilmiş platforma açarı gizlədilibmi? */
+/**
+ * Verilmiş platforma açarı gizlədilibmi?
+ *
+ * `null`/boş MƏNBƏSİZ deməkdir (əl ilə admin panelindən əlavə edilmiş məhsul) —
+ * o, platforma deyil, ona görə gizli də sayılmır. Bu ayrım vacibdir: əks halda
+ * mənbəsiz məhsulların detal səhifəsi 404 verərdi.
+ */
 export function isPlatformDisabled(key?: string | null): boolean {
-  return typeof key === "string" && DISABLED_PLATFORMS.includes(key);
+  if (key === null || key === undefined || key === "") return false;
+  return !ENABLED_PLATFORMS.includes(key);
 }
 
-/** Siyahıdan gizli platformaları atır (admin və UI siyahıları üçün). */
-export function withoutDisabledPlatforms<T extends { key: string }>(rows: T[]): T[] {
-  return rows.filter((r) => !isPlatformDisabled(r.key));
+/** Prisma `where` fraqmenti — yalnız icazəli platformaların açarları. */
+export function enabledPlatformKeyWhere(): { key: { in: string[] } } {
+  return { key: { in: [...ENABLED_PLATFORMS] } };
 }
 
 /**
@@ -35,21 +43,16 @@ export function withoutDisabledPlatforms<T extends { key: string }>(rows: T[]): 
  * `AND` içində qaytarılır, çünki bəzi sorğularda (məs. `searchProducts`)
  * yuxarı səviyyədə artıq `OR` var — birbaşa `OR` yazsaq onu əzərdi.
  *
- * `source: null` ayrıca buraxılır: SQL-də `source NOT IN (...)` NULL sətirlər
- * üçün NULL qaytarır, yəni əl ilə əlavə edilmiş (mənbəsiz) məhsullar da
- * siyahıdan düşərdi.
+ * `source: null` ayrıca buraxılır: SQL-də `source IN (...)` NULL sətirlər üçün
+ * NULL qaytarır, yəni əl ilə əlavə edilmiş məhsullar siyahıdan düşərdi.
  */
 export function enabledSourceWhere(): {
-  AND?: Array<{ OR: Array<{ source: null } | { source: { notIn: string[] } }> }>;
+  AND: Array<{ OR: Array<{ source: null } | { source: { in: string[] } }> }>;
 } {
-  if (DISABLED_PLATFORMS.length === 0) return {};
   return {
     AND: [
       {
-        OR: [
-          { source: null },
-          { source: { notIn: [...DISABLED_PLATFORMS] } },
-        ],
+        OR: [{ source: null }, { source: { in: [...ENABLED_PLATFORMS] } }],
       },
     ],
   };

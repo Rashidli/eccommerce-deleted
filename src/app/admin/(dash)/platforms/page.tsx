@@ -4,15 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { Card, EmptyState, PageHeader, Table, Td } from "@/components/admin/ui";
 import { BadgeColorEditor, PlatformToggle } from "./toggle";
-import { DISABLED_PLATFORMS } from "@/lib/platform-visibility";
+import { enabledPlatformKeyWhere } from "@/lib/platform-visibility";
 
 // Platformaların idarəetməsi — hansı platforma storefront-da işləsin.
 // Deaktiv platforma axtarış seçicisində görünmür və import etmir (qayda #4:
 // bu qərar kodda deyil, bazadadır).
 //
-// `DISABLED_PLATFORMS` bundan AYRIDIR: oradakı açarlar admin panelində də
-// siyahıya düşmür (bax `@/lib/platform-visibility`). İnteqrasiya kodu qalır,
-// sadəcə idarəetmə səthindən çıxarılır ki, səhvən açılmasın.
+// GÖRÜNÜRLÜK bundan AYRIDIR: `@/lib/platform-visibility` ağ siyahısında
+// olmayan platforma bu siyahıya heç düşmür. İnteqrasiya kodu qalır, sadəcə
+// idarəetmə səthindən çıxarılır ki, səhvən açılmasın.
 
 export const metadata = { robots: { index: false, follow: false } };
 
@@ -23,7 +23,7 @@ export default async function AdminPlatformsPage() {
 
   const [platforms, categoryCounts, productCounts] = await Promise.all([
     prisma.platform.findMany({
-      where: { key: { notIn: [...DISABLED_PLATFORMS] } },
+      where: enabledPlatformKeyWhere(),
       orderBy: { sortOrder: "asc" },
     }),
     prisma.platformCategory.groupBy({
