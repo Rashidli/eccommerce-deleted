@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Daxili təqdimat sənədidir — axtarış sistemlərinə düşməməlidir. -->
+<meta name="robots" content="noindex, nofollow">
+<title>1688 əsaslı e-ticarət platforması</title>
+<style>
+  :root {
+    --ground: #faf9fb;
+    --surface: #ffffff;
+    --ink: #1e1b4b;
+    --muted: #6b6890;
+    --line: #e4e1ec;
+    --accent: #7c3aed;
+    --accent-soft: #f1ebfe;
+    --ready: #0f766e;
+    --ready-soft: #e2f2f0;
+    --planned: #b45309;
+    --planned-soft: #fdf1e0;
+
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #141329; --surface: #1c1a35; --ink: #eceafa; --muted: #9a97bd;
+      --line: #302d50; --accent: #a78bfa; --accent-soft: #2a2450;
+      --ready: #5eead4; --ready-soft: #14342f; --planned: #fbbf24; --planned-soft: #38290f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141329; --surface: #1c1a35; --ink: #eceafa; --muted: #9a97bd;
+    --line: #302d50; --accent: #a78bfa; --accent-soft: #2a2450;
+    --ready: #5eead4; --ready-soft: #14342f; --planned: #fbbf24; --planned-soft: #38290f;
+  }
+  :root[data-theme="light"] {
+    --ground: #faf9fb; --surface: #ffffff; --ink: #1e1b4b; --muted: #6b6890;
+    --line: #e4e1ec; --accent: #7c3aed; --accent-soft: #f1ebfe;
+    --ready: #0f766e; --ready-soft: #e2f2f0; --planned: #b45309; --planned-soft: #fdf1e0;
+  }
+
+  body {
+    background: var(--ground); color: var(--ink); font-family: var(--sans);
+    font-size: 16px; line-height: 1.65; margin: 0; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 78rem; margin: 0 auto; padding: 0 1.5rem 6rem; }
+  .col { max-width: 42rem; }
+
+  header.masthead {
+    border-bottom: 1px solid var(--line);
+    padding: 4.5rem 0 3rem; margin-bottom: 3.5rem;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 1.25rem;
+  }
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem); line-height: 1.02; letter-spacing: -0.035em;
+    font-weight: 800; margin: 0 0 1.25rem; text-wrap: balance;
+  }
+  .lede { font-size: 1.15rem; color: var(--muted); margin: 0; text-wrap: pretty; }
+
+  section { margin-bottom: 4.5rem; scroll-margin-top: 2rem; }
+  h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.025em;
+    font-weight: 750; margin: 0 0 0.75rem; text-wrap: balance;
+  }
+  h3 { font-size: 1.02rem; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 0.4rem; }
+  p { margin: 0 0 1rem; text-wrap: pretty; }
+  .section-rule {
+    display: flex; align-items: baseline; gap: 1rem;
+    border-top: 1px solid var(--line); padding-top: 1.25rem; margin-bottom: 1.5rem;
+  }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 3px; white-space: nowrap;
+  }
+  .tag-ready { background: var(--ready-soft); color: var(--ready); }
+  .tag-planned { background: var(--planned-soft); color: var(--planned); }
+
+  figure { margin: 2rem 0; }
+  .scroll { overflow-x: auto; padding-bottom: 0.5rem; }
+  svg { max-width: 100%; height: auto; display: block; }
+  figcaption {
+    font-size: 0.86rem; color: var(--muted); margin-top: 0.9rem;
+    max-width: 46rem; text-wrap: pretty;
+  }
+  .dgm-box { fill: var(--surface); stroke: var(--line); }
+  .dgm-box-accent { fill: var(--accent-soft); stroke: var(--accent); }
+  .dgm-title { font: 600 13px var(--sans); fill: var(--ink); }
+  .dgm-sub { font: 11px var(--mono); fill: var(--muted); }
+  .dgm-edge { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+  .dgm-edge-accent { stroke: var(--accent); stroke-width: 1.8; fill: none; }
+  .dgm-label { font: 10.5px var(--mono); fill: var(--muted); }
+  .dgm-label-accent { font: 10.5px var(--mono); fill: var(--accent); }
+  .dgm-num { font: 700 11px var(--mono); fill: var(--accent); }
+  .dgm-route { font: 11px var(--mono); fill: var(--muted); }
+  .dgm-head { font: 700 12px var(--mono); fill: var(--ink); letter-spacing: 0.08em; }
+
+  .grid2 {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: 1.5rem 2.5rem; margin: 2rem 0;
+  }
+  .panel {
+    border: 1px solid var(--line); background: var(--surface);
+    border-radius: 4px; padding: 1.25rem 1.4rem;
+  }
+  .panel h3 { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+  ul.feat { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+  ul.feat li {
+    padding: 0.42rem 0 0.42rem 1.1rem; border-top: 1px solid var(--line);
+    position: relative; font-size: 0.93rem;
+  }
+  ul.feat li:first-child { border-top: 0; }
+  ul.feat li::before {
+    content: ""; position: absolute; left: 0; top: 1.05em;
+    width: 5px; height: 1px; background: var(--muted);
+  }
+  code {
+    font-family: var(--mono); font-size: 0.86em; background: var(--accent-soft);
+    color: var(--accent); padding: 0.08em 0.35em; border-radius: 3px;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 1.5rem 0; }
+  th, td { text-align: left; padding: 0.6rem 0.9rem 0.6rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted); font-weight: 500;
+  }
+  td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); }
+
+  .callout {
+    border-left: 2px solid var(--accent); padding: 0.2rem 0 0.2rem 1.25rem;
+    margin: 2rem 0; color: var(--muted);
+  }
+  .callout strong { color: var(--ink); }
+
+  footer {
+    border-top: 1px solid var(--line); padding-top: 1.5rem;
+    font-family: var(--mono); font-size: 0.78rem; color: var(--muted);
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Platforma təqdimatı · 1688 · Azərbaycan</p>
+    <h1>1688-dən Bakıya — bir axında e-ticarət</h1>
+    <p class="lede col">
+      Müştəri Çin topdan bazarının kataloqunu öz dilində gəzir, sifariş verir və
+      ödəyir. Qalan hər şey — tədarükçüdən alış, Çindəki anbara qəbul, göndəriş
+      və son çatdırılma — sistemin daxilində gedir.
+    </p>
+  </header>
+
+  <!-- ================= 01 mənbə ================= -->
+  <section id="menbe">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">01 · Mənbə</span></div>
+    <h2>Kataloq haradan gəlir</h2>
+    <div class="col">
+      <p>
+        Kataloq Çinin ən böyük topdan bazarı olan <strong>1688</strong>-dən
+        qidalanır. Bu, istehsalçıların birbaşa satış etdiyi meydançadır: eyni
+        mal pərakəndə mağazadan daha ucuz gəlir və çeşid müqayisəolunmaz
+        genişdir.
+      </p>
+      <p>
+        Müştəri üçün fərq sadədir — Çin saytlarında əlləşmək, çincə yazışmaq və
+        vasitəçi axtarmaq lazım gəlmir. Axtarışdan ödənişə və qapıya qədər
+        bütün yol bir yerdə, öz dilində və öz valyutasında keçir.
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 02 axtarış ================= -->
+  <section id="axtaris">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">02 · Axtarış</span></div>
+    <h2>Məhsul necə tapılır və tərcümə olunur</h2>
+    <p class="col">
+      1688 çin bazarıdır: latın hərfli sorğuya demək olar heç nə qaytarmır.
+      Ona görə axtarış sorğusu platformaya çatmazdan əvvəl çincəyə çevrilir,
+      gələn nəticələr isə geri müştərinin dilinə tərcümə olunur.
+    </p>
+
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1020 300" role="img"
+             aria-label="Axtarış axını: müştərinin sorğusu AI ilə çincəyə çevrilir, 1688-ə göndərilir, gələn nəticələr normallaşdırılıb bazaya yazılır və müştəriyə öz dilində göstərilir.">
+          <defs>
+            <marker id="s-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+            </marker>
+            <marker id="s-ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <rect class="dgm-box" x="8" y="60" width="176" height="80" rx="4"/>
+          <text class="dgm-title" x="26" y="90">Sorğu</text>
+          <text class="dgm-sub" x="26" y="110">“kişi köynəyi”</text>
+          <text class="dgm-sub" x="26" y="126">az / ru / en</text>
+
+          <rect class="dgm-box-accent" x="220" y="60" width="176" height="80" rx="4"/>
+          <text class="dgm-title" x="238" y="90">AI tərcümə</text>
+          <text class="dgm-sub" x="238" y="110">→ 男士衬衫</text>
+          <text class="dgm-sub" x="238" y="126">serverdə</text>
+
+          <rect class="dgm-box" x="432" y="60" width="176" height="80" rx="4"/>
+          <text class="dgm-title" x="450" y="90">1688 axtarışı</text>
+          <text class="dgm-sub" x="450" y="110">topdan bazar</text>
+          <text class="dgm-sub" x="450" y="126">xam nəticə</text>
+
+          <rect class="dgm-box" x="644" y="60" width="176" height="80" rx="4"/>
+          <text class="dgm-title" x="662" y="90">Normallaşdırma</text>
+          <text class="dgm-sub" x="662" y="110">qiymət, şəkil, SKU</text>
+          <text class="dgm-sub" x="662" y="126">dublikat təmizliyi</text>
+
+          <rect class="dgm-box-accent" x="856" y="60" width="156" height="80" rx="4"/>
+          <text class="dgm-title" x="874" y="90">Baza</text>
+          <text class="dgm-sub" x="874" y="110">kataloq</text>
+          <text class="dgm-sub" x="874" y="126">3 dildə ad</text>
+
+          <line class="dgm-edge-accent" x1="184" y1="100" x2="212" y2="100" marker-end="url(#s-ar-a)"/>
+          <line class="dgm-edge" x1="396" y1="100" x2="424" y2="100" marker-end="url(#s-ar)"/>
+          <line class="dgm-edge" x1="608" y1="100" x2="636" y2="100" marker-end="url(#s-ar)"/>
+          <line class="dgm-edge-accent" x1="820" y1="100" x2="848" y2="100" marker-end="url(#s-ar-a)"/>
+
+          <!-- geri dönüş: UI həmişə bazadan oxuyur -->
+          <path class="dgm-edge-accent" stroke-dasharray="4 3"
+                d="M 934 140 L 934 200 L 96 200 L 96 148" marker-end="url(#s-ar-a)"/>
+          <rect x="380" y="186" width="270" height="28" rx="3" fill="var(--ground)"/>
+          <text class="dgm-label-accent" x="515" y="205" text-anchor="middle">müştəri nəticəni BAZADAN görür</text>
+
+          <text class="dgm-sub" x="8" y="250">Növbəti dəfə eyni sorğu gələndə cavab birbaşa bazadan verilir — 1688-ə təkrar sorğu getmir.</text>
+          <text class="dgm-sub" x="8" y="270">Məhsul adları arxa fonda üç dilə tərcümə olunur; müştəri hansı dildədirsə onu görür.</text>
+        </svg>
+      </div>
+      <figcaption>
+        Baza kataloq rolundadır: səhifələr sürətli açılır, axtarış sistemləri
+        tərəfindən indekslənə bilir və hər kliklə Çin tərəfə sorğu getmir.
+      </figcaption>
+    </figure>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Axtarışın davranışı <span class="tag tag-ready">hazır</span></h3>
+        <ul class="feat">
+          <li>Yazdıqca təklif — hər ad siyahıda bir dəfə görünür</li>
+          <li>Sorğu axtarışdan sonra input sahəsində qalır</li>
+          <li>Məhsul kodu (SKU) ilə də birbaşa tapılır</li>
+          <li>Filtrlər başlıqda — qiymət, brend, kateqoriya</li>
+          <li>Eyni məhsulun rəng variantları bir kart kimi birləşir</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Tərcümə qatı <span class="tag tag-ready">hazır</span></h3>
+        <ul class="feat">
+          <li>Sorğu axtarışdan əvvəl çincəyə çevrilir</li>
+          <li>Məhsul adları üç dilə çevrilir — az / ru / en</li>
+          <li>Tərcümə arxa fonda gedir — müştəri gözləmir</li>
+          <li>Sayt mətnləri və məhsul mətnləri ayrı-ayrı idarə olunur</li>
+          <li>Admin tərcüməni əl ilə düzəldə bilir</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 03 səhifələr ================= -->
+  <section id="sehifeler">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">03 · Quruluş</span></div>
+    <h2>Hansı səhifələr olacaq</h2>
+    <p class="col">
+      Üç ayrı sahə, üç ayrı giriş. Mağaza hamıya açıqdır və axtarış
+      sistemlərinə indekslənir; müştəri kabineti və idarəetmə paneli bağlıdır.
+      <strong>İdarəetmə girişi müştəri girişindən tam ayrıdır</strong> — iki
+      müstəqil hesab sistemidir, biri digərinə qapı açmır.
+    </p>
+
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1020 560" role="img"
+             aria-label="Səhifə xəritəsi: platforma kökündən üç sahə ayrılır — açıq mağaza, müştəri kabineti və idarəetmə paneli.">
+          <defs>
+            <marker id="m-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+            </marker>
+          </defs>
+
+          <rect class="dgm-box-accent" x="410" y="10" width="200" height="46" rx="4"/>
+          <text class="dgm-title" x="510" y="32" text-anchor="middle">Platforma</text>
+          <text class="dgm-sub" x="510" y="48" text-anchor="middle">vahid sistem</text>
+
+          <line class="dgm-edge" x1="510" y1="56" x2="510" y2="76"/>
+          <line class="dgm-edge" x1="170" y1="76" x2="850" y2="76"/>
+          <line class="dgm-edge" x1="170" y1="76" x2="170" y2="96" marker-end="url(#m-ar)"/>
+          <line class="dgm-edge" x1="510" y1="76" x2="510" y2="96" marker-end="url(#m-ar)"/>
+          <line class="dgm-edge" x1="850" y1="76" x2="850" y2="96" marker-end="url(#m-ar)"/>
+
+          <rect class="dgm-box" x="20" y="100" width="300" height="330" rx="4"/>
+          <text class="dgm-head" x="40" y="126">MAĞAZA</text>
+          <text class="dgm-sub" x="40" y="144">açıq · indekslənir</text>
+          <line class="dgm-edge" x1="40" y1="156" x2="300" y2="156"/>
+          <text class="dgm-route" x="40" y="178">Ana səhifə — slayder, bölmələr</text>
+          <text class="dgm-route" x="40" y="200">Axtarış nəticələri</text>
+          <text class="dgm-route" x="40" y="222">Məhsul səhifəsi</text>
+          <text class="dgm-route" x="40" y="244">Kateqoriyalar</text>
+          <text class="dgm-route" x="40" y="266">Kateqoriya baxışı</text>
+          <text class="dgm-route" x="40" y="288">Yeni · Endirim · Kampaniya</text>
+          <text class="dgm-route" x="40" y="310">Brendlər</text>
+          <text class="dgm-route" x="40" y="332">Səbət</text>
+          <text class="dgm-route" x="40" y="354">Sifariş rəsmiləşdirmə</text>
+          <text class="dgm-route" x="40" y="376">Ödəniş və təsdiq</text>
+          <text class="dgm-route" x="40" y="398">Seçilmişlər · Kömək</text>
+
+          <rect class="dgm-box" x="360" y="100" width="300" height="330" rx="4"/>
+          <text class="dgm-head" x="380" y="126">MÜŞTƏRİ KABİNETİ</text>
+          <text class="dgm-sub" x="380" y="144">giriş tələb olunur</text>
+          <line class="dgm-edge" x1="380" y1="156" x2="640" y2="156"/>
+          <text class="dgm-route" x="380" y="178">Giriş · Qeydiyyat</text>
+          <text class="dgm-route" x="380" y="200">İcmal</text>
+          <text class="dgm-route" x="380" y="222">Sifarişlərim</text>
+          <text class="dgm-route" x="380" y="244">Sifariş detalı və izləmə</text>
+          <text class="dgm-route" x="380" y="266">Ünvanlarım</text>
+          <text class="dgm-route" x="380" y="288">Profil</text>
+          <text class="dgm-sub" x="380" y="320">müştəri kodu burada görünür</text>
+          <text class="dgm-sub" x="380" y="338">şəhər / rayon seçimi</text>
+          <text class="dgm-sub" x="380" y="356">bağlamanın anbardakı statusu</text>
+
+          <rect class="dgm-box" x="700" y="100" width="300" height="440" rx="4"/>
+          <text class="dgm-head" x="720" y="126">İDARƏETMƏ PANELİ</text>
+          <text class="dgm-sub" x="720" y="144">ayrı hesab · rol + icazə</text>
+          <line class="dgm-edge" x1="720" y1="156" x2="980" y2="156"/>
+          <text class="dgm-route" x="720" y="178">İcmal</text>
+          <text class="dgm-route" x="720" y="200">Məhsullar</text>
+          <text class="dgm-route" x="720" y="222">Kateqoriyalar</text>
+          <text class="dgm-route" x="720" y="244">Mənbə platforma</text>
+          <text class="dgm-route" x="720" y="266">Valyuta və məzənnə</text>
+          <text class="dgm-route" x="720" y="288">Beynəlxalq daşıma tarifi</text>
+          <text class="dgm-route" x="720" y="310">Yerli çatdırılma tarifi</text>
+          <text class="dgm-route" x="720" y="332">Kargo şirkətləri</text>
+          <text class="dgm-route" x="720" y="354">Sifarişlər</text>
+          <text class="dgm-route" x="720" y="376">Alışlar və jurnal</text>
+          <text class="dgm-route" x="720" y="398">Promo kodlar</text>
+          <text class="dgm-route" x="720" y="420">Kampaniyalar</text>
+          <text class="dgm-route" x="720" y="442">Slayder · Bloq</text>
+          <text class="dgm-route" x="720" y="464">Müştərilər</text>
+          <text class="dgm-route" x="720" y="486">İdarəçilər</text>
+          <text class="dgm-sub" x="720" y="514">hər bölmə ayrıca icazə tələb edir</text>
+        </svg>
+      </div>
+      <figcaption>
+        Bütün məzmun — məhsul, kateqoriya, tarif, slayder və mətnlər — panel
+        üzərindən idarə olunur. Yeni kampaniya və ya tarif dəyişikliyi üçün
+        proqramçı gözləmək lazım gəlmir.
+      </figcaption>
+    </figure>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Mağazada müştəri nə edir</h3>
+        <ul class="feat">
+          <li><b>Ana səhifə</b> — slayder, kampaniya blokları, kateqoriyalar, yeni və trend məhsullar</li>
+          <li><b>Axtarış</b> — yazdıqca təklif, qiymət və brend filtri, sıralama</li>
+          <li><b>Kateqoriya baxışı</b> — mənbə ağacı öz alt bölmələri ilə</li>
+          <li><b>Məhsul səhifəsi</b> — qalereya, ölçü və rəng seçimi, təsvir, oxşar məhsullar</li>
+          <li><b>Səbət</b> — miqdar dəyişimi, ara cəm, çatdırılma hesabı</li>
+          <li><b>Sifariş</b> — ünvan seçimi, kuryer və ya məntəqə, promo kod, ödəniş</li>
+          <li><b>Seçilmişlər</b> — sonraya saxlanan məhsullar</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Kabinetdə müştəri nə görür</h3>
+        <ul class="feat">
+          <li><b>İcmal</b> — son sifarişlər və cari statuslar</li>
+          <li><b>Sifarişlərim</b> — bütün sifarişlər, tarix və məbləğ üzrə</li>
+          <li><b>Sifariş detalı</b> — hər sətrin ölçüsü, rəngi, qiyməti və bağlamanın harada olduğu</li>
+          <li><b>Ünvanlarım</b> — şəhər və rayon seçimi ilə, çatdırılma haqqı ona görə hesablanır</li>
+          <li><b>Profil</b> — ad, telefon, şifrə</li>
+          <li><b>Müştəri kodu</b> — anbarda bağlamanı tanıdan şəxsi nişan</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 04 avto-alış ================= -->
+  <section id="alis">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">04 · Alış</span></div>
+    <h2>Sifariş verildi — sonra nə olur</h2>
+    <p class="col">
+      Müştəri ödəyəndən sonra sistem sifarişləri <strong>müştəri üzrə
+      qruplaşdırır</strong> və tədarükçüdən avtomatik alır. Hər müştəriyə
+      unikal kod verilir; həmin kod 1688 sifarişində alıcı sətrinə yazılır —
+      anbara yüzlərlə eyni görünüşlü bağlama gələndə paketin kimə aid olduğu
+      məhz bu koddan bilinir.
+    </p>
+
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1020 260" role="img"
+             aria-label="Alış axını: sifariş bazada qruplaşdırılır, tədarükçüdən avtomatik alınır, mal anbara gəlir və müştəri kabinetdə statusu görür.">
+          <defs>
+            <marker id="p-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+            </marker>
+            <marker id="p-ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <rect class="dgm-box" x="8" y="70" width="184" height="86" rx="4"/>
+          <text class="dgm-num" x="26" y="94">01</text>
+          <text class="dgm-title" x="26" y="116">Sifariş + ödəniş</text>
+          <text class="dgm-sub" x="26" y="134">müştəri kodu verilir</text>
+          <text class="dgm-sub" x="26" y="150">sətirdə ölçü / rəng</text>
+
+          <rect class="dgm-box-accent" x="228" y="70" width="184" height="86" rx="4"/>
+          <text class="dgm-num" x="246" y="94">02</text>
+          <text class="dgm-title" x="246" y="116">Avto-alış</text>
+          <text class="dgm-sub" x="246" y="134">müştəri üzrə qrup</text>
+          <text class="dgm-sub" x="246" y="150">bir-bir, ardıcıl</text>
+
+          <rect class="dgm-box" x="448" y="70" width="184" height="86" rx="4"/>
+          <text class="dgm-num" x="466" y="94">03</text>
+          <text class="dgm-title" x="466" y="116">Tədarükçü göndərir</text>
+          <text class="dgm-sub" x="466" y="134">anbar ünvanına</text>
+          <text class="dgm-sub" x="466" y="150">müştəri kodu ilə</text>
+
+          <rect class="dgm-box" x="668" y="70" width="184" height="86" rx="4"/>
+          <text class="dgm-num" x="686" y="94">04</text>
+          <text class="dgm-title" x="686" y="116">Anbar qəbulu</text>
+          <text class="dgm-sub" x="686" y="134">paket açılır, çəkilir</text>
+          <text class="dgm-sub" x="686" y="150">status yenilənir</text>
+
+          <rect class="dgm-box-accent" x="888" y="70" width="124" height="86" rx="4"/>
+          <text class="dgm-num" x="906" y="94">05</text>
+          <text class="dgm-title" x="906" y="116">Kabinet</text>
+          <text class="dgm-sub" x="906" y="134">müştəri görür</text>
+
+          <line class="dgm-edge-accent" x1="192" y1="113" x2="220" y2="113" marker-end="url(#p-ar-a)"/>
+          <line class="dgm-edge" x1="412" y1="113" x2="440" y2="113" marker-end="url(#p-ar)"/>
+          <line class="dgm-edge" x1="632" y1="113" x2="660" y2="113" marker-end="url(#p-ar)"/>
+          <line class="dgm-edge-accent" x1="852" y1="113" x2="880" y2="113" marker-end="url(#p-ar-a)"/>
+
+          <text class="dgm-sub" x="8" y="196">Nəticəsi bilinməyən alış sistemi DAYANDIRIR — eyni malın iki dəfə alınmasının qarşısı belə alınır.</text>
+          <text class="dgm-sub" x="8" y="216">Hər addım jurnala yazılır: plan, səbət, ünvan, ödəniş. Operator harada dayandığını görür.</text>
+          <text class="dgm-sub" x="8" y="236">Ölçü seçilməyən sətri sistem almır — səhv ölçünü Çindən geri qaytarmaq baha başa gəlir.</text>
+        </svg>
+      </div>
+      <figcaption>
+        Alış ardıcıldır, paralel deyil: tədarükçü tərəfdə giriş paylaşılandır və iki
+        müştəri qarışsa, birinin malı digərinin adına düşərdi.
+      </figcaption>
+    </figure>
+
+    <div class="callout col">
+      <strong>Müştəri nə görür:</strong> aldığı məhsul kabinetdə sifariş
+      sətri kimi qalır — ölçüsü, rəngi, qiyməti və cari statusu ilə. Anbar
+      paketi qəbul edəndə status öz-özünə dəyişir; müştəri heç kimə zəng
+      etmədən bağlamasının harada olduğunu bilir.
+    </div>
+  </section>
+
+  <!-- ================= 05 anbar ================= -->
+  <section id="anbar">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">05 · Anbar</span></div>
+    <h2>Çindəki anbar və status yenilənməsi</h2>
+    <p class="col">
+      Mal tədarükçüdən birbaşa müştəriyə getmir — Çindəki anbara gəlir. Anbar
+      paketi qəbul edir, açır, çəkir və göndərişi təyin edir. Hər hərəkət
+      sistemə geri bildirilir və müştərinin gördüyü status avtomatik dəyişir.
+    </p>
+
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1020 400" role="img"
+             aria-label="Anbar inteqrasiyası: platforma gözlənilən bağlamaların siyahısını göndərir, anbar qəbul, çəki və göndəriş məlumatını geri qaytarır, status müştəri kabinetində yenilənir.">
+          <defs>
+            <marker id="w-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+            </marker>
+            <marker id="w-ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <rect class="dgm-box-accent" x="380" y="16" width="260" height="70" rx="4"/>
+          <text class="dgm-title" x="510" y="42" text-anchor="middle">Platforma</text>
+          <text class="dgm-sub" x="510" y="60" text-anchor="middle">sifariş + müştəri kodu</text>
+          <text class="dgm-sub" x="510" y="76" text-anchor="middle">operator paneli</text>
+
+          <rect class="dgm-box" x="20" y="196" width="220" height="86" rx="4"/>
+          <text class="dgm-title" x="40" y="224">1688 tədarükçüləri</text>
+          <text class="dgm-sub" x="40" y="244">çoxsaylı satıcı</text>
+          <text class="dgm-sub" x="40" y="260">ayrı-ayrı bağlamalar</text>
+
+          <rect class="dgm-box" x="380" y="176" width="260" height="140" rx="4"/>
+          <text class="dgm-title" x="510" y="204" text-anchor="middle">Çindəki anbar</text>
+          <text class="dgm-sub" x="400" y="228">· bağlamanı qəbul edir</text>
+          <text class="dgm-sub" x="400" y="246">· açır və yoxlayır</text>
+          <text class="dgm-sub" x="400" y="264">· çəki və ölçü götürür</text>
+          <text class="dgm-sub" x="400" y="282">· eyni müştərini birləşdirir</text>
+          <text class="dgm-sub" x="400" y="300">· göndərişi təyin edir</text>
+
+          <rect class="dgm-box" x="780" y="196" width="220" height="86" rx="4"/>
+          <text class="dgm-title" x="800" y="224">Bakı</text>
+          <text class="dgm-sub" x="800" y="244">gömrük · bölüşdürmə</text>
+          <text class="dgm-sub" x="800" y="260">kuryer / məntəqə</text>
+
+          <line class="dgm-edge" x1="240" y1="239" x2="372" y2="239" marker-end="url(#w-ar)"/>
+          <text class="dgm-label" x="306" y="230" text-anchor="middle">yük</text>
+          <line class="dgm-edge" x1="640" y1="239" x2="772" y2="239" marker-end="url(#w-ar)"/>
+          <text class="dgm-label" x="706" y="230" text-anchor="middle">uçuş</text>
+
+          <line class="dgm-edge-accent" x1="470" y1="86" x2="470" y2="168" marker-end="url(#w-ar-a)"/>
+          <text class="dgm-label-accent" x="458" y="122" text-anchor="end">gözlənilən</text>
+          <text class="dgm-label-accent" x="458" y="138" text-anchor="end">bağlamalar</text>
+
+          <line class="dgm-edge-accent" x1="556" y1="168" x2="556" y2="86" marker-end="url(#w-ar-a)"/>
+          <text class="dgm-label-accent" x="568" y="122">qəbul · çəki</text>
+          <text class="dgm-label-accent" x="568" y="138">göndəriş nömrəsi</text>
+
+          <line class="dgm-edge" stroke-dasharray="4 3" x1="510" y1="316" x2="510" y2="344"/>
+          <text class="dgm-label" x="510" y="362" text-anchor="middle">müştəri kodu bağlamanı sifarişlə birləşdirir</text>
+          <text class="dgm-sub" x="510" y="384" text-anchor="middle">status kabinetdə avtomatik yenilənir</text>
+        </svg>
+      </div>
+      <figcaption>
+        İki istiqamətli əlaqə inteqrasiyanın özüdür: platforma anbara nə
+        gözlədiyini bildirir, anbar isə nəyi qəbul etdiyini və hansı göndərişə
+        qoyduğunu geri qaytarır.
+      </figcaption>
+    </figure>
+
+    <table>
+      <thead>
+        <tr><th>Anbar hərəkəti</th><th>Sistemdə nə dəyişir</th><th>Müştəri nə görür</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Bağlama qəbul edildi</td><td>Sifariş sətri “anbarda” olur</td><td>“Çin anbarına çatdı”</td></tr>
+        <tr><td>Paket açıldı, yoxlanıldı</td><td>Çəki, ölçü və foto yazılır</td><td>Faktiki çəki və şəkil</td></tr>
+        <tr><td>Bağlamalar birləşdirildi</td><td>Bir göndərişə bağlanır</td><td>“Göndərişə hazırlanır”</td></tr>
+        <tr><td>Göndəriş təyin edildi</td><td>Kargo şirkəti və nömrə yazılır</td><td>İzləmə nömrəsi</td></tr>
+        <tr><td>Uçuş / gömrük</td><td>Status ötürülür</td><td>“Yoldadır”, “Gömrükdə”</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ================= 06 kargo ================= -->
+  <section id="kargo">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">06 · Kargo</span></div>
+    <h2>Bir neçə kargo şirkəti — tarif və bölgü</h2>
+    <p class="col">
+      Sistemə birdən çox kargo şirkəti qoşulur. Hər şirkətin öz tarifi var və
+      tarif <strong>rayon səviyyəsində</strong> təyin olunur — eyni rayona iki
+      şirkət fərqli qiymətə gedə bilər. Bağlamalar isə bir şirkətə yığılmır:
+      aktiv şirkətlər arasında <strong>bərabər bölünür</strong>.
+    </p>
+
+    <figure>
+      <div class="scroll">
+        <svg viewBox="0 0 1020 420" role="img"
+             aria-label="Kargo bölgüsü: anbardan çıxan bağlamalar aktiv kargo şirkətləri arasında növbə ilə bərabər bölünür, hər şirkətin öz rayon tarifi var.">
+          <defs>
+            <marker id="c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--muted)"/>
+            </marker>
+            <marker id="c-ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+            </marker>
+          </defs>
+
+          <!-- mənbə -->
+          <rect class="dgm-box-accent" x="20" y="150" width="200" height="90" rx="4"/>
+          <text class="dgm-title" x="40" y="180">Hazır bağlamalar</text>
+          <text class="dgm-sub" x="40" y="200">anbardan çıxır</text>
+          <text class="dgm-sub" x="40" y="218">çəki və ünvan məlum</text>
+
+          <!-- paylayıcı -->
+          <rect class="dgm-box" x="300" y="150" width="180" height="90" rx="4"/>
+          <text class="dgm-title" x="390" y="180" text-anchor="middle">Paylayıcı</text>
+          <text class="dgm-sub" x="390" y="200" text-anchor="middle">növbə üzrə</text>
+          <text class="dgm-sub" x="390" y="218" text-anchor="middle">yük balansı</text>
+
+          <line class="dgm-edge-accent" x1="220" y1="195" x2="292" y2="195" marker-end="url(#c-ar-a)"/>
+
+          <!-- üç kargo -->
+          <rect class="dgm-box" x="580" y="40" width="220" height="76" rx="4"/>
+          <text class="dgm-title" x="600" y="68">Kargo A</text>
+          <text class="dgm-sub" x="600" y="88">öz rayon tarifi</text>
+          <text class="dgm-sub" x="600" y="104">öz filialları</text>
+
+          <rect class="dgm-box" x="580" y="157" width="220" height="76" rx="4"/>
+          <text class="dgm-title" x="600" y="185">Kargo B</text>
+          <text class="dgm-sub" x="600" y="205">öz rayon tarifi</text>
+          <text class="dgm-sub" x="600" y="221">öz filialları</text>
+
+          <rect class="dgm-box" x="580" y="274" width="220" height="76" rx="4"/>
+          <text class="dgm-title" x="600" y="302">Kargo C</text>
+          <text class="dgm-sub" x="600" y="322">öz rayon tarifi</text>
+          <text class="dgm-sub" x="600" y="338">öz filialları</text>
+
+          <path class="dgm-edge" d="M 480 195 L 530 195 L 530 78 L 572 78" marker-end="url(#c-ar)"/>
+          <path class="dgm-edge" d="M 480 195 L 572 195" marker-end="url(#c-ar)"/>
+          <path class="dgm-edge" d="M 480 195 L 530 195 L 530 312 L 572 312" marker-end="url(#c-ar)"/>
+
+          <text class="dgm-label" x="540" y="140" text-anchor="middle">⅓</text>
+          <text class="dgm-label" x="540" y="188" text-anchor="middle">⅓</text>
+          <text class="dgm-label" x="540" y="262" text-anchor="middle">⅓</text>
+
+          <!-- müştəri -->
+          <rect class="dgm-box-accent" x="860" y="157" width="140" height="76" rx="4"/>
+          <text class="dgm-title" x="930" y="190" text-anchor="middle">Müştəri</text>
+          <text class="dgm-sub" x="930" y="210" text-anchor="middle">kuryer / məntəqə</text>
+
+          <path class="dgm-edge" d="M 800 78 L 830 78 L 830 190 L 852 190" marker-end="url(#c-ar)"/>
+          <path class="dgm-edge" d="M 800 195 L 852 195" marker-end="url(#c-ar)"/>
+          <path class="dgm-edge" d="M 800 312 L 830 312 L 830 200 L 852 200" marker-end="url(#c-ar)"/>
+
+          <text class="dgm-sub" x="20" y="290">Bölgü meyarı: hər şirkətin cari yükü — bağlama sayı və ya ümumi çəki.</text>
+          <text class="dgm-sub" x="20" y="312">Şirkət deaktiv edilsə növbədən çıxır, qalanlar arasında bölgü davam edir.</text>
+          <text class="dgm-sub" x="20" y="334">Müştəri məntəqə seçibsə bağlama həmin şirkətin filialına yönəlir.</text>
+          <text class="dgm-sub" x="20" y="356">Rayona getməyən şirkət o bağlamanı almır — bölgü yalnız uyğunlar arasında gedir.</text>
+        </svg>
+      </div>
+      <figcaption>
+        Bərabər bölgü kommersiya qərarıdır: tək şirkətdən asılı qalmamaq,
+        qiymət danışıqlarında mövqe saxlamaq və bir şirkət dayananda axının
+        kəsilməməsi üçün.
+      </figcaption>
+    </figure>
+
+    <h3 style="margin-top:2.5rem">Yeni kargo şirkəti necə qoşulur</h3>
+    <p class="col">
+      Qoşulma beş addımdır və heç birində proqram kodu yazılmır — hamısı
+      paneldən edilir.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Addım</th><th>Kim edir</th><th>Nə olur</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 · Şirkət yaradılır</td>
+          <td>Bizim operator</td>
+          <td>Paneldə ad və əlaqə məlumatı yazılır; şirkət dərhal siyahıda görünür</td>
+        </tr>
+        <tr>
+          <td>2 · Bağlantı açarı</td>
+          <td>Kargo şirkəti</td>
+          <td>Öz sistemlərinin ünvanını və giriş açarını verir. Sistemi yoxdursa bu addım buraxılır — şirkət “əl rejimi”ndə işləyir</td>
+        </tr>
+        <tr>
+          <td>3 · Filiallar</td>
+          <td>Avtomatik</td>
+          <td>Şirkətin filial və məntəqələri çəkilir, müştəri seçim siyahısında görünür</td>
+        </tr>
+        <tr>
+          <td>4 · Tariflər</td>
+          <td>Bizim operator</td>
+          <td>Rayon-rayon qiymət yazılır. Yazılmayan rayonda ümumi tarif işləyir</td>
+        </tr>
+        <tr>
+          <td>5 · Aktivləşdirmə</td>
+          <td>Bizim operator</td>
+          <td>Şirkət bölgü növbəsinə daxil olur və bağlama almağa başlayır</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout col">
+      <strong>Sistemi olmayan şirkət də qoşula bilir.</strong> Bağlantı açarı
+      verməyən şirkət üçün göndəriş və izləmə əl ilə aparılır — qiymət yenə
+      rayon tarifindən hesablanır, statusu isə operator yeniləyir. Şirkət
+      sonradan öz sistemini qoşanda heç nə yenidən qurulmur.
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Hazır olan <span class="tag tag-ready">hazır</span></h3>
+        <ul class="feat">
+          <li>Şirkətlə bağlantı: qiymət sorğusu, göndəriş yaratma, izləmə, bildiriş</li>
+          <li>Yeni şirkət paneldən əlavə olunur</li>
+          <li>Filial siyahısı şirkətin öz sistemindən avtomatik yenilənir</li>
+          <li>Rayon tarifi hər şirkət üçün ayrıca təyin olunur</li>
+          <li>Şirkət tarifi yoxdursa ümumi tarif tətbiq olunur</li>
+          <li>Yeni şirkətin qoşulması üçün hazır texniki sənəd var</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Növbəti mərhələ <span class="tag tag-planned">planda</span></h3>
+        <ul class="feat">
+          <li>Anbarla iki istiqamətli bağlantı: gözlənilən siyahı və qəbul bildirişi</li>
+          <li>Bağlamaların şirkətlər arasında avtomatik bölgüsü</li>
+          <li>Çəki əsaslı yekun haqqın sifarişə yazılması</li>
+          <li>Statusun uçdan-uca sinxronizasiyası</li>
+          <li>Şirkət üzrə performans hesabatı — gecikmə, itki, qiymət</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 07 panel ================= -->
+  <section id="panel">
+    <div class="section-rule"><span class="eyebrow" style="margin:0">07 · İdarəetmə</span></div>
+    <h2>Paneldə nə var — bölmə-bölmə</h2>
+    <p class="col">
+      Panel 16 bölmədən ibarətdir. Hər bölmə ayrıca icazə tələb edir: operatora
+      yalnız sifariş və çatdırılma, redaktora yalnız kataloq və məzmun açıla
+      bilər. Aşağıda hər bölmənin nəyi idarə etdiyi göstərilib.
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Bölmə</th><th>Nə edir</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>İcmal</td><td>Dövriyyə, sifariş sayı, alınmalı mallar və problemli alışların xəbərdarlığı</td></tr>
+        <tr><td>Məhsullar</td><td>Kataloq: axtarış, kateqoriya/mənbə/status filtri, qiymət, şəkil, üçdilli ad və təsvir</td></tr>
+        <tr><td>Kateqoriyalar</td><td>Öz kateqoriyalarımız və mənbədən gələn ağac — hansının menyuda, hansının ana səhifədə görünəcəyi</td></tr>
+        <tr><td>Mənbə platforma</td><td>Kataloqun qidalandığı meydança, anbar ünvanı və nişan rəngləri</td></tr>
+        <tr><td>Valyuta</td><td>Göstəriləcək valyuta və məzənnə — mərkəzi bankdan avtomatik yenilənir</td></tr>
+        <tr><td>Beynəlxalq tarif</td><td>Çindən anbara qədər daşıma haqqı: baza qiymət, kiloqram üzrə əlavə, pulsuz hədd</td></tr>
+        <tr><td>Yerli çatdırılma</td><td>Şəhər və rayon üzrə kuryer tarifi, paket məntəqələri, hər kargo şirkəti üçün ayrıca qiymət</td></tr>
+        <tr><td>Kargo şirkətləri</td><td>Şirkətin qoşulması, filial siyahısı, bağlantı açarları, hadisə jurnalı</td></tr>
+        <tr><td>Sifarişlər</td><td>Axtarış və filtr, sətir üzrə ölçü/rəng, izləmə kodu, status idarəsi</td></tr>
+        <tr><td>Alışlar</td><td>Hər avto-alışın addım-addım jurnalı və nəticəsi bilinməyən halların bağlanması</td></tr>
+        <tr><td>Promo kodlar</td><td>Endirim kodu: faiz və ya sabit məbləğ, minimum sifariş, istifadə limiti, müddət</td></tr>
+        <tr><td>Kampaniyalar</td><td>Ana səhifədəki promo blokları — başlıq, şəkil, keçid</td></tr>
+        <tr><td>Slayder</td><td>Ana səhifənin baş bannerləri, sırası və aktivliyi</td></tr>
+        <tr><td>Bloq</td><td>Məqalələr — başlıq, mətn, şəkil, dərc tarixi</td></tr>
+        <tr><td>Müştərilər</td><td>Axtarış, sifariş tarixçəsi, ünvanlar, müştəri kodu, giriş bərpası</td></tr>
+        <tr><td>İdarəçilər</td><td>İşçi hesabları, rollar və bölmə icazələri, açıq girişlərin bağlanması</td></tr>
+      </tbody>
+    </table>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Gündəlik iş <span class="tag tag-ready">hazır</span></h3>
+        <ul class="feat">
+          <li>Sifarişlər: axtarış, status və kargo filtri, səhifələmə</li>
+          <li>Sətir başına ölçü/rəng, izləmə kodu, “alındı” işarəsi</li>
+          <li>Alışlar bölməsi: hər avto-alışın addım-addım jurnalı</li>
+          <li>Nəticəsi bilinməyən alış açıq xəbərdarlıqla göstərilir</li>
+          <li>Müştərilər: axtarış, sifariş tarixçəsi, ünvanlar, müştəri kodu</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Quraşdırma <span class="tag tag-ready">hazır</span></h3>
+        <ul class="feat">
+          <li>Məhsul və kateqoriya idarəsi — üçdilli ad və təsvir</li>
+          <li>Valyuta və məzənnə — mərkəzi bankdan avtomatik</li>
+          <li>Beynəlxalq və yerli tariflər ayrı-ayrı</li>
+          <li>Ana səhifə: slayder, kampaniya blokları, bölmələr</li>
+          <li>İdarəçilər: rol (Sahib / Admin / Operator / Redaktor) və bölmə icazələri</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout col">
+      <strong>Təhlükəsizlik:</strong> idarəetmə girişi ilə müştəri girişi
+      tamamilə ayrı sistemlərdir və heç bir nöqtədə kəsişmir. Hər işçinin öz
+      hesabı var — kimin nə etdiyi bilinir, bir nəfərin girişini ayrıca bağlamaq
+      mümkündür. Parol dəyişəndə həmin hesabın bütün açıq girişləri kəsilir.
+    </div>
+  </section>
+
+  <footer>
+    1688 əsaslı e-ticarət platforması · təqdimat sənədi
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.vercel
+
+/src/generated/prisma
+
+# Prisma
+/dev.db
+/dev.db-journal
+/src/generated
+
+# Task menecer CLI — içində API tokeni var, repoya düşməməlidir.
+/initask.sh
+
+# Müvəqqəti sorğu/təmizləmə skriptləri — repoya lazım deyil.
+/scripts/tmp/
+
+# DB dump-lari — 34 MB, icinde real musteri/istifadeci datasi var.
+# Repoya dusmemelidir; serverde qalir.
+/database/
+
+# Redaktor swap fayllari — .env-in tam surətini saxlaya bilir.
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo

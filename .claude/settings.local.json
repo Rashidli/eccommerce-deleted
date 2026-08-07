@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(echo \"=== TSC EXIT: $? ===\")",
+      "Bash(npx eslint *)",
+      "Bash(echo \"=== EXIT $? ===\")",
+      "Read(//root/.nvm/versions/node/**)",
+      "Read(//usr/local/n/versions/**)",
+      "Bash(command -v fnm nvm)",
+      "Bash(curl -s http://localhost:3247/)",
+      "Bash(curl -s http://localhost:3247/account)",
+      "Bash(psql -U postgres -c \"select current_user, version\\(\\);\")",
+      "Bash(psql -c \"select current_user;\")",
+      "Bash(psql -U postgres -tAc \"select rolname from pg_roles;\")",
+      "Bash(curl -s http://127.0.0.1:3100/)",
+      "Bash(curl -s http://127.0.0.1:3100/robots.txt)",
+      "Bash(curl -s http://127.0.0.1:3100/sitemap.xml)",
+      "Bash(curl -s \"http://127.0.0.1:3100/products\")",
+      "Bash(ssh -o BatchMode=yes root@167.71.70.216 ' *)",
+      "Bash(python3 -)",
+      "Bash(timeout 150 ssh -p 54 -o StrictHostKeyChecking=no -o BatchMode=yes root@38.242.139.243 ' *)",
+      "Bash(curl -s --max-time 15 \"https://open.er-api.com/v6/latest/USD\")",
+      "Bash(curl -s --max-time 15 \"https://www.cbar.az/currencies/31.07.2026.xml\")",
+      "Bash(./initask.sh comment 3439 '✅ Həll olundu. Footer-dəki abunə \\(newsletter\\) bloku sistemdən tamamilə çıxarıldı — başlıq, '\\\\''İlk sifarişinə 10% endirim'\\\\'' mətni, e-poçt sahəsi və '\\\\''Abunə ol'\\\\'' düyməsi. *)",
+      "Bash(./initask.sh move *)",
+      "Bash(timeout 60 ssh -p 54 -o StrictHostKeyChecking=no -o BatchMode=yes root@38.242.139.243 'cd /var/www/html/zara-scraper && cat > probe.js <<\"EOF\"\nconst zara=require\\(\"./src/services/zaraClient\"\\);\n\\(async\\(\\)=>{\n  const raw=await zara.search\\({query:\"camisa hombre\",offset:0,limit:20}\\);\n  const types={}; const ids=new Set\\(\\); let dup=0;\n  for\\(const r of raw.results||[]\\) {\n    const c=r.content||{}; const t=c.type||\"\\(tipsiz\\)\";\n    types[t]=\\(types[t]||0\\)+1;\n    if\\(t===\"Product\"\\){ if\\(ids.has\\(c.id\\)\\) dup++; ids.add\\(c.id\\); }\n  }\n  console.log\\(\"xam results:\",\\(raw.results||[]\\).length\\);\n  console.log\\(\"tiplər:\",JSON.stringify\\(types\\)\\);\n  console.log\\(\"unikal Product:\",ids.size,\"təkrar:\",dup\\);\n  console.log\\(\"totalResults:\",raw.totalResults,\"isLastPage:\",raw.isLastPage\\);\n}\\)\\(\\).catch\\(e=>console.error\\(\"XƏTA:\",e.message\\)\\);\nEOF\nnohup node probe.js > probe.out 2>&1 &\necho \"başladı\"' 2>&)"
+    ]
+  }
+}

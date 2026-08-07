@@ -1,0 +1,2 @@
+@AGENTS.md
+@docs/PROJECT-RULES.md

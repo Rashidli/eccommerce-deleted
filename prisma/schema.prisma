@@ -1,0 +1,901 @@
+// E-Commerce — admin panelin idarə etdiyi bütün məzmun burada saxlanır.
+// PostgreSQL: driver adapteri (@prisma/adapter-pg) ilə, JSONB dəstəyi var.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Category {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  nameAz           String
+  nameEn           String
+  nameRu           String
+  image            String?
+  /// 1688 platforma kateqoriya ID-si — category browse Partzona-dan qidalanır.
+  sourceCategoryId String?
+  /// 1688 pool tipi: "auto" | "retail".
+  sourcePoolType   String?
+  sortOrder        Int       @default(0)
+  products         Product[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Product {
+  id               String      @id @default(cuid())
+  /// Köhnə/fallback tək ad — pickLang trilingual sahələr boşdursa buna düşür.
+  name             String
+  /// Trilingual adlar (qayda #5). Storefront pickLang(nameAz/En/Ru, lang) ilə seçir.
+  nameAz           String?
+  nameEn           String?
+  nameRu           String?
+  description      String?
+  descAz           String?
+  descEn           String?
+  descRu           String?
+  brand            String
+  /// Qiymətlər sentlə saxlanır — kəsr yuvarlaqlaşma xətası olmasın.
+  priceCents       Int
+  oldPriceCents    Int?
+  /// Mənbə valyutası — Partzona cavabında açıq gəlmir, default CNY (checkout-da FX/markup üçün).
+  currency         String      @default("CNY")
+  /// 1688 minimum sifariş miqdarı (起订量) — cart/checkout məhdudiyyət kimi tətbiq edir.
+  minOrderQty      Int         @default(1)
+  /// Satış sayı (best-selling sort üçün) — reviewCount-dan fərqli.
+  salesCount       Int?
+  image            String
+  images           String? // JSON massiv
+  rating           Float       @default(0)
+  reviewCount      Int         @default(0)
+  stock            Int         @default(0)
+  isActive         Boolean     @default(true)
+  /// Platforma açarı: 1688 / taobao / amazon (Platform.key ilə uyğun).
+  source           String?
+  /// Platformadakı orijinal məhsul ID-si — dublikat yazılmasın deyə (source, externalId) unikaldır.
+  externalId       String?
+  /// Platformanın öz kateqoriya ID-si (1688 category_id) — yenidən çəkmək/paginate üçün.
+  sourceCategoryId String?
+  /// 1688 pool tipi: "auto" (ehtiyat hissələri) | "retail" (qalan hər şey).
+  sourcePoolType   String?
+  /// Tədarükçüdəki artikul — operator sifarişi verəndə lazımdır.
+  sku              String?
+  /// Məhsulun mənbə saytdakı birbaşa linki.
+  sourceUrl        String?
+  sizes            String? // JSON massiv
+  colors           String? // JSON massiv
+  /// Platformaya xas atributlar (rəng/ölçü xəritəsi, min. sifariş və s.) — normalize edilmiş.
+  attributes       Json?
+  /// Partzona-nın orijinal cavabı — heç nə itməsin deyə olduğu kimi saxlanır (qayda #6).
+  raw              Json?
+  /// Detal sorğusunun SON VAXTI. `updatedAt`-dan ayrıdır, çünki o, adi axtarış
+  /// upsert-ində də dəyişir. Nəticənin boş olub-olmamasından ASILI DEYİL — bəzi
+  /// məhsulların təsviri platformada ümumiyyətlə yoxdur; ona baxsaq, həmin
+  /// məhsul hər açılışda təkrar-təkrar çəkilirdi (24 saatlıq keş işləmirdi).
+  detailFetchedAt  DateTime?
+  /// Ardıcıl uğursuz detal cəhdlərinin sayı — geriyə çəkilmə (backoff) üçün.
+  /// Platforma sistematik bloklayırsa (məs. Akamai bot qoruması), hər 15
+  /// dəqiqədən bir yenidən sorğu atmaq həm faydasızdır, həm də mənbəyi yorur.
+  detailFailures   Int         @default(0)
+  categoryId       String?
+  category         Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems       OrderItem[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([source, externalId])
+  @@index([categoryId])
+  @@index([isActive])
+  @@index([source])
+}
+
+/// Platformanın ÖZ kateqoriya ağacı (1688 `/categories`) — bizim daxili `Category`-dən ayrıdır.
+/// Platformalar fərqli olduğu üçün orijinal cavab `raw`-da saxlanır (qayda #6).
+model PlatformCategory {
+  id               String   @id @default(cuid())
+  /// Platform.key: "1688" | "taobao"
+  platformKey      String
+  /// Platformadakı kateqoriya ID-si (1688 `category_id`)
+  externalId       String
+  parentExternalId String?
+  nameAz           String?
+  nameEn           String?
+  nameRu           String?
+  /// Orijinal çincə ad (`chinese_name`) — Partzona axtarışı çincə getdiyi üçün saxlanır.
+  nameZh           String?
+  /// `leaf` — məhsul yalnız yarpaq kateqoriyalardan çəkilir.
+  isLeaf           Boolean  @default(false)
+  /// 1688 pool tipi: "auto" | "retail" (məhsul sorğusunda tələb olunur).
+  poolType         String?
+  /// AI ilə generasiya olunmuş kateqoriya şəkli (public/ altında yol).
+  image            String?
+  /// Bu sətir BAŞQA platformanın ağacından KOPYALANIBSA, mənbə platformanın açarı.
+  /// Taobao-nun öz kateqoriya API-si yoxdur, ona görə ağacı 1688-dən götürülür və
+  /// baxış çincə ad (`nameZh`) ilə axtarışa çevrilir.
+  /// Platforma öz ağacını versə, `derivedFrom` dolu sətirləri təhlükəsiz silmək olar —
+  /// beləliklə kopyalanmış ID-lər platformanın ƏSL ID-ləri ilə qarışmır.
+  derivedFrom      String?
+  /// Yuxarı NAV zolağında görünsün (admin seçir) — az sayda əsas kateqoriya.
+  showInNav        Boolean  @default(false)
+  /// Ana səhifədəki kateqoriya BÖLMƏSİNDƏ görünsün (admin seçir) — ~3 sıra.
+  /// İki bayraq ayrıdır: bir kateqoriya nav-da olub bölmədə olmaya bilər (və əksinə).
+  showOnHome       Boolean  @default(false)
+  sortOrder        Int      @default(0)
+  raw              Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([platformKey, externalId])
+  @@index([platformKey])
+  @@index([parentExternalId])
+}
+
+/// Kateqoriya BAXIŞININ nəticəsi: hansı kateqoriyada hansı məhsullar göstərilib.
+/// Ayrıca cədvəldir, çünki məhsulun ÖZ `sourceCategoryId`-si (1688-dəki əsl
+/// kateqoriyası) baxılan kateqoriyadan fərqli olur — onu əzmək data itkisidir.
+/// Bu əlaqə sayəsində eyni kateqoriya+səhifə ikinci dəfə bazadan verilir.
+model CategoryProduct {
+  id          String   @id @default(cuid())
+  platformKey String
+  /// Baxılan kateqoriyanın externalId-si (əsas və ya alt kateqoriya).
+  categoryId  String
+  productId   String
+  /// Platformanın qaytardığı sıra — səhifələmə sabit qalsın deyə.
+  position    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([platformKey, categoryId, productId])
+  @@index([platformKey, categoryId, position])
+}
+
+/// Axtarış/import platformaları — hardcoded platforms.json əvəzinə DB-dən idarə olunur.
+model Platform {
+  id          String   @id @default(cuid())
+  /// Sabit açar: 1688 / taobao / amazon — Product.source ilə uyğun.
+  key         String   @unique
+  nameAz      String
+  nameEn      String
+  nameRu      String
+  taglineAz   String?
+  taglineEn   String?
+  taglineRu   String?
+  /// Hansı inteqrasiya driver-i xidmət edir: "partzona" | "otapi".
+  provider    String   @default("partzona")
+  /// Driver-in mənbə kodu: OTAPI üçün Taobao/Tmall/Alibaba1688/Aliexpress/Jd/Pinduoduo.
+  providerKey String?
+  /// Partzona API baza yolu: 1688 üçün "/products", taobao üçün "/taobao".
+  apiPath     String?
+  /// Platformanın SATIŞ VALYUTASI (1688/taobao → CNY, zara → EUR).
+  /// İmport zamanı `Product.currency`-nin defaultu buradan gəlir — əvvəl hər
+  /// normalizer öz sabitini yazırdı, valyutanı dəyişmək kod dəyişikliyi tələb
+  /// edirdi (qayda #4 pozuntusu). `Product.currency` yenə də sətir üzrə
+  /// HƏQİQƏTdir: platforma cavabında açıq valyuta gəlsə, o üstündür.
+  currency    String   @default("CNY")
+  /// Məhsul kartındakı platforma nişanının FON rəngi (CSS dəyəri: hex/gradient).
+  /// Kodda sabit map saxlamaq qayda #4-ü pozardı — admin panel dəyişə bilir.
+  /// Boş olsa UI neytral fona düşür (nişan itmir).
+  badgeBg     String?  @default("#7c3aed")
+  /// Nişanın MƏTN rəngi — fonla kontrast admin tərəfindən idarə olunur,
+  /// çünki qara fonda ağ, açıq fonda tünd mətn lazımdır.
+  badgeFg     String?  @default("#ffffff")
+  /// false olsa axtarışda görünmür/işləmir (məs. amazon hazırda söndürülü).
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  /// BİZİM ANBAR — platformadan alınan mal buraya gəlir.
+  ///
+  /// Zara üçün İspaniyadakı anbarımızdır: sifariş verərkən çatdırılma ünvanı
+  /// HƏMİŞƏ budur, yalnız ad/soyad müştəriyə görə dəyişir (adın əvvəlinə
+  /// müştəri kodu yazılır — `src/lib/customer-code.ts`).
+  ///
+  /// JSONB-dir, çünki hər platformanın anbar sahələri fərqli ola bilər
+  /// (əyalət, ştat kodu, vergi nömrəsi). Formа: `PlatformWarehouse`
+  /// (`src/lib/platform-warehouse.ts`). Kodda SABİT saxlanmır (qayda #4) —
+  /// anbar köçsə deploy lazım olmasın.
+  warehouse   Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// VALYUTA MƏZƏNNƏSİ — göstəriş üçün çevirmə (1 base = rate × quote).
+///
+/// DİQQƏT: çevrilmiş məbləğ YALNIZ göstərişdir. Sifariş/ödəniş həmişə real
+/// platforma valyutasında saxlanılır (`OrderTotal`, `OrderShipping`, `Payment`) —
+/// çevrilmiş rəqəm heç vaxt saxlanmır və heç vaxt tutulan məbləğ olmur.
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  /// Mənbə valyutası (məs. CNY) — məhsulun öz valyutası.
+  base      String
+  /// Hədəf valyuta (məs. AZN) — müştəriyə göstərilən.
+  quote     String
+  /// 1 `base` neçə `quote` edir. Məs. base=CNY, quote=AZN, rate=0.2380.
+  rate      Float
+  /// Məzənnə haradan gəldi: "manual" (admin yazdı) | provayder açarı.
+  source    String   @default("manual")
+  /// Məzənnənin alındığı an — köhnəlmiş məzənnəni görmək üçün.
+  fetchedAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([base, quote])
+  @@index([quote])
+}
+
+/// Mağazanın TƏK sətirlik valyuta ayarı (id = "default").
+model CurrencySettings {
+  id              String   @id @default("default")
+  /// Müştəriyə göstərilən valyuta. `null` → çevirmə YOXDUR, hər məhsul öz
+  /// valyutasında görünür (defolt davranış — admin təyin edənə qədər heç nə
+  /// səssizcə dəyişmir).
+  displayCurrency String?
+  /// Çevirməyə əlavə olunan marja (bazis punktu: 250 = %2.5).
+  /// Bazis punktu işlədilir ki, kəsr yuvarlaqlaşma xətası olmasın.
+  markupBps       Int      @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+model PromoCode {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  /// "percent" və ya "fixed"
+  type          String
+  /// percent üçün faiz (10 = 10%), fixed üçün sent
+  value         Int
+  minOrderCents Int       @default(0)
+  usageLimit    Int?
+  usedCount     Int       @default(0)
+  startsAt      DateTime?
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  eyebrowAz String
+  eyebrowEn String
+  eyebrowRu String
+  titleAz   String
+  titleEn   String
+  titleRu   String
+  ctaAz     String
+  ctaEn     String
+  ctaRu     String
+  href      String
+  image     String
+  tint      String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Slide {
+  id        String   @id @default(cuid())
+  titleAz   String
+  titleEn   String
+  titleRu   String
+  subtitle  String?
+  image     String
+  href      String   @default("/products")
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  body        String
+  coverImage  String?
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([isPublished])
+}
+
+model User {
+  id             String          @id @default(cuid())
+  /// MÜŞTƏRİ NÖMRƏSİ — ardıcıl tam ədəd (1, 2, 3...).
+  ///
+  /// `id` cuid-dir: uzun, təsadüfi və insan üçün oxunmazdır. Anbar isə
+  /// bağlamanın üstündə qısa, təkrarolunmaz nişan görməlidir — ona görə
+  /// ayrıca sayğac saxlanılır. Bundan `FOR000001` formatlı müştəri kodu
+  /// yaradılır (`src/lib/customer-code.ts`) və Zara sifarişində ADIN
+  /// ƏVVƏLİNƏ yazılır ki, İspaniyadakı anbarımız paketi kimə aid olduğunu
+  /// dərhal bilsin.
+  customerNo     Int             @unique @default(autoincrement())
+  /// MÜŞTƏRİ KODU — `FOR000001`. Anbarımız paketi bununla tanıyır.
+  ///
+  /// Qeydiyyatda BAZA özü doldurur (`user_customer_code` BEFORE INSERT
+  /// trigger-i): 'FOR' || lpad(customerNo, 6, '0'). Yəni kodsuz istifadəçi
+  /// yaranmır və tətbiq qatında ayrıca addım lazım deyil.
+  ///
+  /// DƏYİŞİLƏ BİLƏR: bəzi müştərilərə fərqli prefiks lazım olur (məs. `EXP...`),
+  /// ona görə sütun adi TEXT-dir. UNIQUE indeks eyni kodun iki müştəridə
+  /// olmasının qarşısını alır.
+  ///
+  /// Format `src/lib/customer-code.ts` → `formatCustomerCode` ilə eynidir.
+  customerCode   String?         @unique
+  email          String          @unique
+  fullName       String
+  phone          String?
+  /// FİN — Azərbaycan şəxsiyyət vəsiqəsinin 7 simvollu kodu (rəqəm + böyük latın).
+  /// NULLABLE, çünki mövcud hesablarda yoxdur — onları bloklamırıq (qeydiyyatda
+  /// isə məcburidir). Unikaldır: eyni FİN ilə iki hesab dublikat/saxtakarlıq
+  /// əlamətidir. Postgres-də UNIQUE bir neçə NULL-a icazə verir, ona görə
+  /// FİN-siz köhnə hesablar bir-birinə mane olmur.
+  /// ŞƏXSİ MƏLUMATDIR: loglanmır, URL-ə düşmür, yalnız sahibinin öz profilində.
+  fin            String?         @unique
+  /// Şifrə hash-i (scrypt) — customer auth. Admin bu modeldən İSTİFADƏ ETMİR (qayda #1).
+  password       String?
+  role           String          @default("customer")
+  orders         Order[]
+  addresses      Address[]
+  sessions       UserSession[]
+  platformOrders PlatformOrder[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+/// Customer sessiyaları — admin session-dan (HMAC token, cookie=ecommerce_admin) TAM ayrı (qayda #1).
+/// Cookie=ecommerce_user; burada yalnız token-in hash-i saxlanır, raw token yox.
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  userAgent String?
+  ip        String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Address {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label      String
+  fullName   String
+  phone      String
+  line       String
+  isDefault  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  city       City?     @relation(fields: [cityId], references: [id])
+  cityId     String?
+  district   District? @relation(fields: [districtId], references: [id])
+  districtId String?
+  orders     Order[]
+
+  @@index([userId])
+}
+
+model Order {
+  id                String             @id @default(cuid())
+  reference         String             @unique
+  userId            String?
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  /// pending (ödəniş gözlənilir) | processing | shipped | delivered | cancelled
+  /// Sifariş `pending` yaranır; ödəniş təsdiqlənəndə `processing`-ə keçir və
+  /// yalnız o andan operator üçün iş sayılır.
+  status            String             @default("pending")
+  /// Ödəniş tamamlanıb — callback yalnız İMZA yoxlanıldıqdan sonra qaldırır.
+  isPaid            Boolean            @default(false)
+  paidAt            DateTime?
+  /// Məhsulların cəmi + çatdırılma. Hər ikisi SERVERDƏ hesablanır.
+  totalCents        Int
+  /// Çatdırılma haqqı ayrıca saxlanır ki, sonradan yenidən hesablanmasın.
+  shippingCents     Int                @default(0)
+  /// "courier" — biz çatdırırıq (ünvan lazımdır)
+  /// "pickup"  — müştəri PUDO məntəqəsindən götürür (ünvan lazım deyil)
+  deliveryMethod    String?
+  /// Kuryer seçiləndə hansı ünvana getdiyi. Ünvan sonradan silinsə də
+  /// sifariş tarixçəsi qalsın deyə `SetNull`.
+  addressId         String?
+  address           Address?           @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  /// PUDO seçiləndə hansı məntəqədən götürüləcəyi.
+  pickupPointId     String?
+  pickupPoint       PickupPoint?       @relation(fields: [pickupPointId], references: [id], onDelete: SetNull)
+  /// Şirkətin ÖZ sifariş nömrəsi — biz onlarda sifariş yaradanda qaytarırlar.
+  cargoOrderNumber  String?
+  /// Çatdırılma/izləmə nömrəsi — sonrakı `update` addımında əlavə olunur.
+  deliveryNumber    String?
+  /// Mətn snapshot-ları — şirkət/filial silinsə də tarixçə oxunaqlı qalsın.
+  courier           String?
+  branch            String?
+  tracking          String?
+  deliveryDate      DateTime?
+  /// Sifarişin ƏSAS valyutası. Qarışıq sifarişdə ən böyük paylı valyuta;
+  /// `totalCents` da HƏMİN valyutaya aiddir (cross-currency cəm DEYİL).
+  currency          String             @default("CNY")
+  /// true — sifarişdə birdən çox valyuta var, `totalCents` tam mənzərə deyil.
+  /// Doğru yekun `totals` sətirlərindədir.
+  isMixedCurrency   Boolean            @default(false)
+  items             OrderItem[]
+  payments          Payment[]
+  shippings         OrderShipping[]
+  totals            OrderTotal[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  /// Kargo şirkəti və filialı — ID ilə bağlıdır. Şirkət/filial silinsə sifariş
+  /// qalır (`SetNull`); insana görünən dəyər `courier`/`branch` snapshot-undadır.
+  cargoCompanyId    String?
+  cargoCompany      CargoCompany?      @relation(fields: [cargoCompanyId], references: [id], onDelete: SetNull)
+  cargoBranchId     String?
+  cargoBranch       CargoBranch?       @relation(fields: [cargoBranchId], references: [id], onDelete: SetNull)
+  cargoStatusEvents CargoStatusEvent[]
+
+  @@index([status])
+  @@index([userId])
+  @@index([isPaid])
+}
+
+/// Ödəniş cəhdi (tranzaksiya). Bir sifarişin bir neçə cəhdi ola bilər —
+/// uğursuz cəhd silinmir, tarixçə qalır.
+///
+/// DİQQƏT: burada KART MƏLUMATI saxlanılmır və saxlanılmamalıdır (PAN/CVV heç
+/// vaxt bizim sistemə düşmür) — onlar provayderin öz hosted səhifəsinə aiddir.
+/// Bizdə yalnız provayderin qaytardığı istinad (`providerRef`) qalır.
+/// Platformanın DAXİLİ çatdırılma tarifi — admin paneldən idarə olunur.
+///
+/// Niyə DB-də: 1688 `productShippingInfo`-da yalnız ÇƏKİ/ÖLÇÜ verir, QİYMƏT yox;
+/// Taobao-nun `orders/render` preview-i isə token icazəsi tələb edir. Ona görə
+/// ölçülən çəki bu tarifə vurulur. Tarif kodda sabit OLMAMALIDIR (qayda #4).
+model PlatformShippingRule {
+  id                  String   @id @default(cuid())
+  /// Platform.key — 1688 / taobao / zara
+  platformKey         String   @unique
+  /// Sabit hissə (sifariş başına), platformanın valyutasında, sentlə.
+  baseCents           Int      @default(0)
+  /// Kiloqrama görə hissə — ölçülən çəkiyə vurulur.
+  perKgCents          Int      @default(0)
+  /// Çəki məlum deyilsə istifadə olunan ehtiyat çəki (qram).
+  fallbackWeightGrams Int      @default(500)
+  /// Bu məbləğdən yuxarı sifarişdə çatdırılma pulsuz (null = heç vaxt).
+  freeOverCents       Int?
+  /// Tarifin valyutası — məhsulların valyutası ilə eyni olmalıdır.
+  currency            String   @default("CNY")
+  /// false — bu platformada çatdırılma hesablanmır (məs. API-yə keçilib).
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+/// Sifarişin PLATFORMA ÜZRƏ çatdırılma sətri.
+/// Bir sifarişdə 3 platforma ola bilər — hər birinin öz haqqı və VALYUTASI var.
+model OrderShipping {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  platformKey String
+  amountCents Int
+  /// Platformanın valyutası (CNY / EUR) — sifarişin ümumi valyutası DEYİL.
+  currency    String
+  /// Seçilmiş üsul (Zara: home_standard, drop_point...).
+  method      String?
+  methodName  String?
+  etaDays     String?
+  /// Hesablamanın necə alındığı: "api" (platformadan) | "rule" (DB tarifi).
+  basis       String   @default("rule")
+  /// Ölçülən ümumi çəki (qram) — tarif əsaslı hesablamanın sübutu.
+  weightGrams Int?
+  /// Platformanın xam cavabı — sonradan yoxlamaq üçün (qayda #6).
+  raw         Json?
+  createdAt   DateTime @default(now())
+
+  @@unique([orderId, platformKey])
+  @@index([orderId])
+}
+
+/// Sifarişin VALYUTA ÜZRƏ yekunu.
+///
+/// Fərqli valyutalar BİR rəqəmə toplanmır (FX qatı hələ yoxdur) — CNY və EUR
+/// ayrı-ayrı sətirlərdə saxlanılır. `Order.totalCents` yalnız tək valyutalı
+/// sifarişdə mənalıdır; qarışıq sifarişdə HƏQİQƏT bu cədvəldir.
+model OrderTotal {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  currency      String
+  itemsCents    Int
+  shippingCents Int      @default(0)
+  totalCents    Int
+  createdAt     DateTime @default(now())
+
+  @@unique([orderId, currency])
+  @@index([orderId])
+}
+
+model Payment {
+  id          String    @id @default(cuid())
+  /// Provayderə göndərilən unikal istinad — callback bununla tapılır.
+  reference   String    @unique
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amountCents Int
+  currency    String    @default("USD")
+  /// Hansı driver yaratdı: "mock" | gələcəkdə real provayder açarı.
+  provider    String
+  /// Provayderin öz tranzaksiya ID-si (callback-də gəlir).
+  providerRef String?
+  /// pending | paid | failed | cancelled
+  status      String    @default("pending")
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([orderId])
+  @@index([status])
+}
+
+/// YUXARI AXIN (platforma) SİFARİŞİ — bir Zara alışı bizim bir neçə sifarişimizi
+/// və çoxlu `OrderItem`-i əhatə edə bilər.
+///
+/// Niyə ayrıca model: Zara-da bir alış = BİR order id. Həmin id-ni hər sətirə
+/// ayrıca yazsaq, "hansı məhsullar eyni Zara sifarişindədir" sualı yalnız sətir
+/// müqayisəsi ilə cavablanardı. Burada bu, əsl əlaqədir və hər iki istiqamətdə
+/// oxunur: Zara order → bizim məhsullar → bizim sifariş nömrələri.
+model PlatformOrder {
+  id               String        @id @default(cuid())
+  /// Platform.key — hazırda "zara"; sonra 1688/taobao da eyni modeldən keçəcək.
+  platformKey      String
+  /// Platformanın verdiyi sifariş nömrəsi. Ödəniş təsdiqlənənə qədər NULL olur.
+  externalOrderId  String?
+  userId           String
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Alışın məbləği — platformanın valyutasında (Zara üçün EUR).
+  totalCents       Int           @default(0)
+  currency         String        @default("EUR")
+  /// planned  — quru icra, hələ alınmayıb
+  /// paying   — ödəniş BAŞLADI, nəticə məlum deyil (bax `paymentStartedAt`)
+  /// paid     — alındı, `externalOrderId` yazıldı
+  /// failed   — alınmadı, təhlükəsiz şəkildə təkrarlana bilər
+  /// needs_review — ƏL İLƏ yoxlanmalıdır, AVTOMATİK TƏKRARLANMAMALIDIR
+  status           String        @default("planned")
+  /// Ödəniş çağırışından ƏVVƏL qoyulur. Proses tam bu anda çöksə, növbəti icra
+  /// "alınıb, id məlum deyil" halını "alınmayıb"dan ayıra bilir — ikiqat alışın
+  /// qarşısını alan yeganə şey budur. Belə hal `needs_review`-ə düşür.
+  paymentStartedAt DateTime?
+  purchasedAt      DateTime?
+  /// Platformanın xam cavabı — sonradan yoxlamaq üçün (qayda #6).
+  raw              Json?
+  items            OrderItem[]
+  logs             PurchaseLog[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@unique([platformKey, externalOrderId])
+  @@index([platformKey, status])
+  @@index([userId])
+}
+
+/// Alış job-unun ADDIM-ADDIM jurnalı — səhv alış sonradan izlənə bilsin.
+/// Yalnız əlavə olunur, silinmir.
+model PurchaseLog {
+  id              String         @id @default(cuid())
+  platformOrderId String?
+  platformOrder   PlatformOrder? @relation(fields: [platformOrderId], references: [id], onDelete: SetNull)
+  /// Job icrasının identifikatoru — bir işə düşmənin bütün sətirləri.
+  runId           String
+  /// cart_clear | cart_verify | add_item | fill_name | verify_name | pay | writeback | skip | abort
+  step            String
+  /// ok | skip | fail
+  outcome         String
+  /// İnsan üçün izah (hansı məhsul, hansı variant, hansı məbləğ, niyə atlandı).
+  message         String
+  /// Struktur detal — sonradan proqramla təhlil üçün.
+  detail          Json?
+  createdAt       DateTime       @default(now())
+
+  @@index([runId])
+  @@index([platformOrderId])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  /// Sifariş anındakı ad, qiymət və mənbə — məhsul sonra dəyişsə belə tarixçə pozulmasın.
+  name       String
+  priceCents Int
+  quantity   Int      @default(1)
+  sku        String?
+  /// Müştərinin seçdiyi ÖLÇÜ və RƏNG (etiket kimi: "M", "Beige").
+  ///
+  /// Zara-da səbətə atmaq üçün SKU kifayət etmir — `cart/add` ölçünün ADINI
+  /// istəyir (rəng isə məhsul URL-inin içindədir). Əvvəl bu dəyərlər səbətdən
+  /// sifarişə keçmirdi və avto-alış hansı ölçünü alacağını bilmirdi.
+  size       String?
+  color      String?
+  sourceUrl  String?
+  source     String?
+
+  /// Operator tədarükçüdən aldıqdan sonra doldurur.
+  purchasedAt  DateTime?
+  trackingCode String?
+  deliveryCode String?
+
+  /// Hansı YUXARI AXIN sifarişinə daxildir. Bir Zara alışı çoxlu sətri əhatə edir.
+  /// Dolu olması = bu sətir artıq alınıb (idempotentlik yoxlaması buna baxır).
+  platformOrderId String?
+  platformOrder   PlatformOrder? @relation(fields: [platformOrderId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([platformOrderId])
+}
+
+/**
+ * ==========================================================================
+ * ÇATDIRILMA — Azərbaycan coğrafiyası, tariflər və PUDO məntəqələri
+ * ==========================================================================
+ * Hamısı BAZADAN idarə olunur (qayda #4): kodda nə şəhər siyahısı, nə qiymət.
+ * Rayon açılanda/bağlananda və ya tarif dəyişəndə deploy lazım deyil.
+ */
+
+model City {
+  id        String        @id @default(cuid())
+  nameAz    String
+  nameEn    String
+  nameRu    String
+  /// Sıralama — admin əsas şəhərləri yuxarı çıxara bilsin.
+  sortOrder Int           @default(0)
+  isActive  Boolean       @default(true)
+  districts District[]
+  addresses Address[]
+  pickups   PickupPoint[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([isActive])
+}
+
+model District {
+  id            String        @id @default(cuid())
+  cityId        String
+  city          City          @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  nameAz        String
+  nameEn        String
+  nameRu        String
+  /// Kuryer tarifi — sentlə, `currency` valyutasında.
+  /// `isFree` true olsa məbləğ nəzərə alınmır (admin kampaniya edə bilir).
+  priceCents    Int           @default(0)
+  isFree        Boolean       @default(false)
+  currency      String        @default("AZN")
+  sortOrder     Int           @default(0)
+  isActive      Boolean       @default(true)
+  addresses     Address[]
+  pickups       PickupPoint[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  cargoBranches CargoBranch[]
+  tariffs       DistrictTariff[]
+
+  @@unique([cityId, nameAz])
+  @@index([cityId, isActive])
+}
+
+/// PUDO — müştərinin özü gəlib götürdüyü paket məntəqəsi.
+model PickupPoint {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  nameAz     String
+  nameEn     String
+  nameRu     String
+  cityId     String
+  city       City      @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  districtId String?
+  district   District? @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  address    String
+  /// İş saatları — sərbəst mətn (hər məntəqənin öz cədvəli var).
+  workHours  String?
+  phone      String?
+  lat        Float?
+  lng        Float?
+  /// Məntəqədən götürmə haqqı — adətən 0, amma admin dəyişə bilər.
+  priceCents Int       @default(0)
+  currency   String    @default("AZN")
+  isActive   Boolean   @default(true)
+  sortOrder  Int       @default(0)
+  orders     Order[]
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([cityId, isActive])
+}
+
+/**
+ * ==========================================================================
+ * KARGO ŞİRKƏTİ İNTEQRASİYASI
+ * ==========================================================================
+ * Axın: (1) şirkətin API-sindən FİLİALLAR çəkilir, (2) biz onlarda sifariş
+ * yaradıb öz nömrəmizi göndəririk, (3) update ilə çatdırılma nömrəsi əlavə
+ * edirik, (4) STATUS SİNXRONU İKİ İSTİQAMƏTLİDİR — "yola salındı"-ya qədər
+ * statusları BİZ göndəririk, ondan sonra ONLAR bizə göndərir (webhook).
+ * Yeni şirkət qoşmaq = bir driver + bir `CargoCompany` sətri (qayda #4/#6).
+ */
+
+model CargoCompany {
+  id            String             @id @default(cuid())
+  /// Sabit açar — URL/webhook yolunda istifadə olunur (məs. "kango").
+  key           String             @unique
+  nameAz        String
+  nameEn        String
+  nameRu        String
+  /// Qeyd — hansı platformalara xidmət etdiyi kimi sərbəst mətn.
+  noteAz        String?
+  noteEn        String?
+  noteRu        String?
+  /// Kod tərəfindəki driver açarı (`src/lib/cargo/drivers`). Boşdursa `manual`.
+  driverKey     String             @default("manual")
+  apiBaseUrl    String?
+  /// SİRR — API açarı/parolu. Heç vaxt loglanmır, heç bir cavabda görünmür,
+  /// admin HTML-inə düşmür. Yalnız server tərəfdə driver-ə ötürülür.
+  apiToken      String?
+  /// Webhook imzasının paylaşılan sirri (HMAC-SHA256). Yuxarıdakı ilə eyni
+  /// qaydalar: heç yerdə açıq göstərilmir.
+  webhookSecret String?
+  isActive      Boolean            @default(true)
+  sortOrder     Int                @default(0)
+  branches      CargoBranch[]
+  tariffs       DistrictTariff[]
+  orders        Order[]
+  events        CargoStatusEvent[]
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([isActive])
+}
+
+/// Kargo filialı — şirkətin API-sindən çəkilir və RAYONA bağlanır.
+/// Rayon bağlantısı təsadüfi deyil: yerli tarif (`District.priceCents`)
+/// onsuz da rayon üzrədir, filial da eyni coğrafiyada olmalıdır.
+model CargoBranch {
+  id           String       @id @default(cuid())
+  companyId    String
+  company      CargoCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  /// Şirkətin öz kodu/nömrəsi — sinxronizasiyada dedup açarı.
+  externalCode String
+  nameAz       String
+  nameEn       String
+  nameRu       String
+  districtId   String?
+  district     District?    @relation(fields: [districtId], references: [id], onDelete: SetNull)
+  address      String
+  lat          Float?
+  lng          Float?
+  workHours    String?
+  phone        String?
+  isActive     Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  orders       Order[]
+  /// Şirkətin xam cavabı — sahə adı dəyişsə itməsin (qayda #6).
+  raw          Json?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([companyId, externalCode])
+  @@index([companyId, isActive])
+  @@index([districtId])
+}
+
+/// Status hadisələrinin ƏLAVƏ-ONLY jurnalı.
+///
+/// `direction` ən vacib sahədir: `outbound` = biz göndərdik, `inbound` = onlar
+/// göndərdi. Bağlama itəndə "kim nə vaxt nə dedi" sualına yeganə cavab budur.
+/// Rədd edilmiş çağırışlar da yazılır — əks halda inteqrasiya problemi
+/// görünməz qalır.
+model CargoStatusEvent {
+  id             String        @id @default(cuid())
+  orderId        String?
+  order          Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  companyId      String?
+  company        CargoCompany? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  /// "outbound" — biz göndərdik | "inbound" — şirkət göndərdi
+  direction      String
+  /// Normalize olunmuş CargoStatus.
+  status         String
+  /// Şirkətin öz status mətni (normalize edilməmiş).
+  rawStatus      String?
+  /// Təkrar göndərilən hadisə iki dəfə tətbiq olunmasın deyə.
+  idempotencyKey String?
+  /// "accepted" — tətbiq olundu | "rejected" — imza/validasiya səhvi
+  /// "ignored"  — qəbul olundu, amma vəziyyəti dəyişmədi (məs. sahiblik qaydası)
+  outcome        String        @default("accepted")
+  /// Rədd/iqnor səbəbi — inteqrasiya problemi diaqnoz oluna bilsin.
+  reason         String?
+  raw            Json?
+  createdAt      DateTime      @default(now())
+
+  @@unique([companyId, idempotencyKey])
+  @@index([orderId, createdAt])
+  @@index([companyId, direction])
+}
+
+/// RAYON TARİFİ — KARGO ŞİRKƏTİ ÜZRƏ.
+///
+/// `District.priceCents` ümumi (default) tarifdir. Amma şirkətlər eyni rayona
+/// eyni qiymətə getmir, ona görə şirkət başına ayrıca sətir lazımdır.
+///
+/// Sətir YOXDURSA rayonun öz qiyməti işləyir — yəni bu cədvəl köhnə davranışı
+/// pozmur, yalnız ONUN ÜSTÜNDƏN yazır. Beləcə hər şirkət üçün bütün rayonları
+/// doldurmaq məcburiyyəti yaranmır.
+model DistrictTariff {
+  id         String       @id @default(cuid())
+  companyId  String
+  company    CargoCompany @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  districtId String
+  district   District     @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  priceCents Int          @default(0)
+  isFree     Boolean      @default(false)
+  currency   String       @default("AZN")
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  @@unique([companyId, districtId])
+  @@index([districtId])
+}
+
+/// ADMIN HESABI — MÜŞTƏRİ HESABINDAN TAM AYRI (qayda #1).
+///
+/// Əvvəl admin girişi `.env`-dəki TƏK paylaşılan parol idi: nə kimin girdiyi
+/// bilinirdi, nə də bir nəfərin girişini ayrıca bağlamaq mümkün idi. Parol
+/// sızsa, dəyişdirmək üçün deploy lazım gəlirdi.
+///
+/// `User` modeli ilə qarışdırılmır: ayrı cədvəl, ayrı sessiya, ayrı cookie.
+/// `User.role = "admin"` admin panelinə giriş VERMİR — o, yalnız müştəri
+/// hesabının növünü göstərir.
+model Admin {
+  id          String         @id @default(cuid())
+  email       String         @unique
+  fullName    String
+  /// scrypt hash — açıq parol heç vaxt saxlanılmır.
+  password    String
+  /// Rol — icazə dəstinin hazır şablonu. "owner" HƏR ŞEYİ edir və icazə
+  /// yoxlamasından keçir (əks halda sonuncu sahib özünü kilidləyə bilərdi).
+  role        String         @default("admin")
+  /// FƏRDİ İCAZƏLƏR — bölmə açarları (`products`, `orders`, ...).
+  ///
+  /// Rol şablondur, bu siyahı isə HƏQİQİ icazədir: admin yaradılanda roldan
+  /// doldurulur, sonra fərdi əlavə/çıxarma mümkündür. Beləcə "yalnız
+  /// sifarişlərə baxan operator" kimi hallar üçün yeni rol icad etmək
+  /// lazım gəlmir.
+  permissions String[]       @default([])
+  isActive    Boolean        @default(true)
+  lastLoginAt DateTime?
+  sessions    AdminSession[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+/// ADMIN SESSİYASI — girişi geri almaq üçün.
+///
+/// Cookie-dəki imzalanmış token təkbaşına ləğv edilə bilmir (imza etibarlıdır
+/// nə qədər ki vaxtı bitməyib). Bu cədvəl həmin boşluğu bağlayır: sətir
+/// silinəndə sessiya dərhal ölür.
+model AdminSession {
+  id        String   @id @default(cuid())
+  adminId   String
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+}
