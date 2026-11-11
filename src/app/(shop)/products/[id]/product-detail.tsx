@@ -248,7 +248,7 @@ export function ProductDetail({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 pb-24 pt-4 md:px-6 md:pb-8 md:pt-8">
+      <div className="container-fluid pb-24 pt-4 md:pb-8 md:pt-8">
         {/* Breadcrumb */}
         <nav className="hidden md:flex items-center gap-2 text-sm text-muted-foreground mb-8">
           <Link href="/" className="hover:text-foreground transition-colors">{t.product.home}</Link>

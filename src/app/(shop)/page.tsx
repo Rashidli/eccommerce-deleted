@@ -1,12 +1,10 @@
 import { HeroCarousel } from "@/components/hero-carousel";
 import {
   HeroSection,
-  PerksSection,
   PlatformsStrip,
-  CategoriesSection,
-  PromoTiles,
   TrendingProducts,
   NewArrivals,
+  CategoryRows,
   MobileHome,
 } from "@/components/home";
 import type { Metadata } from "next";
@@ -17,11 +15,10 @@ import { SHOW_PLATFORM_UI } from "@/lib/platform-visibility";
 import {
   getTrendingProducts,
   getNewArrivals,
-  getCategoriesForHome,
   getActivePlatforms,
   getCampaigns,
   getSlides,
-  getPlatformCategories,
+  getPopularCategoryRows,
 } from "@/lib/data/catalog";
 
 /**
@@ -47,54 +44,52 @@ export async function generateMetadata(): Promise<Metadata> {
 // Server komponenti — bütün home datası DB-dən gəlir (qayda #4). Dil cookie-dən (getLang).
 export default async function HomePage() {
   const lang = await getLang();
-  const [trending, newArrivals, categories, platforms, campaigns, slides] =
+  // Kateqoriya siyahıları ARTIQ BURADA ÇƏKİLMİR: kateqoriyalar header-in story
+  // zolağına köçdü və onun datasını `(shop)/layout.tsx` verir. Əvvəl ana səhifə
+  // eyni siyahıları təkrar çəkirdi (üstəlik hər platforma üçün ayrıca sorğu) —
+  // istifadə olunmayan iş idi.
+  const [trending, newArrivals, platforms, campaigns, slides, categoryRows] =
     await Promise.all([
-    getTrendingProducts(lang),
-    getNewArrivals(lang),
-    getCategoriesForHome(lang),
-    getActivePlatforms(lang),
-    getCampaigns(lang),
-    getSlides(lang),
-  ]);
-
-  // Hər aktiv platformanın ÖZ kateqoriya ağacı (1688-də var, Taobao-da API-də yoxdur).
-  const platformCategories = Object.fromEntries(
-    await Promise.all(
-      platforms.map(
-        async (p) => [p.key, await getPlatformCategories(p.key, lang, 200, "home")] as const,
-      ),
-    ),
-  );
+      getTrendingProducts(lang),
+      getNewArrivals(lang),
+      getActivePlatforms(lang),
+      getCampaigns(lang),
+      getSlides(lang),
+      // Populyar kateqoriyalar: 5 kateqoriya × 20 ən yeni məhsul.
+      getPopularCategoryRows(lang, 5, 20),
+    ]);
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
-      <div className="mx-auto max-w-7xl px-4 py-0 md:py-6">
+      <div className="container-fluid pb-0 pt-0 md:pb-6 md:pt-[18px]">
         {/* Mobil — tətbiq ana ekranı: kateqoriya dairələri, promo karuseli, məhsul lentləri */}
         <MobileHome
-          categories={categories}
-          platformCategories={platformCategories}
           campaigns={campaigns}
           trending={trending}
           newArrivals={newArrivals}
+          categoryRows={categoryRows}
         />
 
         {/* Masaüstü — klassik səhifə düzümü */}
         <div className="hidden md:block">
-          <div className="space-y-6">
-            {/* Slayd BAZADAN gəlir (/admin/slides). Yoxdursa ehtiyat başlıq
-                göstərilir — boş sahə qoymaq daha pisdir. */}
-            {slides.length > 0 ? <HeroCarousel slides={slides} /> : <HeroSection />}
-            <PerksSection />
-          </div>
+          {/* Slayd BAZADAN gəlir (/admin/slides). Yoxdursa ehtiyat başlıq
+              göstərilir — boş sahə qoymaq daha pisdir. */}
+          {slides.length > 0 ? <HeroCarousel slides={slides} /> : <HeroSection />}
 
           <main className="mt-10 min-w-0 space-y-12">
+            {/* BURADAN SİLİNƏNLƏR:
+                · Kateqoriya bölməsi — eyni siyahı header-də story zolağındadır.
+                · "Üstünlüklər" zolağı (Qlobal təchizat / Ən yaxşı qiymətlər /
+                  Sürətli çatdırılma / 24/7 Dəstək) — `mock-data`-dakı sabit
+                  siyahıdan qidalanırdı, yəni qayda #4-ə zidd idi.
+                · Promo kartları — bannerlə eyni işi görürdü, təkrar idi.
+                Üçü də bannerlə məhsul lentləri arasında yer yeyirdi. */}
             {SHOW_PLATFORM_UI && <PlatformsStrip platforms={platforms} />}
-            <CategoriesSection
-              categories={categories}
-              platformCategories={platformCategories}
-            />
-            <PromoTiles campaigns={campaigns} />
             <TrendingProducts products={trending} />
+            {/* Populyar kateqoriyalar — hər biri öz məhsul karuseli ilə.
+                Trend ilə "yeni gələnlər" arasındadır: ümumi lentdən sonra
+                kateqoriya üzrə dərinliyə keçid təbii oxunur. */}
+            <CategoryRows rows={categoryRows} />
             <NewArrivals products={newArrivals} />
           </main>
         </div>

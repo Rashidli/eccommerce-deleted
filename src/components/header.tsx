@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { ShoppingCart, Heart, User, Search, X } from "lucide-react";
-import { TopBar } from "@/components/header/top-bar";
 import { CategoryBar } from "@/components/header/category-bar";
+import { CatalogMenu } from "@/components/header/catalog-menu";
 import type { HomeCategoryDTO } from "@/lib/data/catalog";
 import { SearchBar } from "@/components/header/search-bar";
 import { MobileMenu } from "@/components/header/mobile-menu";
+import { LangSwitcher } from "@/components/lang-switcher";
 import { useCart } from "@/context/cart-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { useLang } from "@/context/lang-context";
@@ -32,26 +33,42 @@ export function Header({
 
   return (
     <>
-      <header className="sticky top-0 z-30 bg-background/95 backdrop-blur pt-[env(safe-area-inset-top)]">
-        {/* 1) Üst zolaq — yalnız masaüstündə. Mobildə naviqasiyanı bottom-nav daşıyır. */}
-        <div className="hidden md:block">
-          <TopBar />
-        </div>
+      <header className="sticky top-0 z-30 bg-background pt-[env(safe-area-inset-top)]">
+        {/* ÜST ZOLAQ SİLİNDİ: nazik naviqasiya zolağı `mock-data`-dakı sabit
+            linklərdən qidalanırdı (qayda #4-ə zidd) və yer yeyirdi. İçindəki
+            yeganə lazımlı element — dil seçici — sağdakı ikon qrupuna keçdi. */}
 
-        {/* 2) Əsas zolaq */}
+        {/* 1) Əsas zolaq — masaüstündə 138px sabit hündürlük. */}
         <div className="border-b border-border/60">
-          <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2.5 md:gap-4 md:py-3">
-            {/* Logo */}
+          <div className="container-fluid flex items-center gap-3 py-3 md:h-[138px] md:gap-0 md:py-0">
+            {/* Logo.
+                `w-[165px]` SABİT en idi və mətn ora sığmırdı — "E-" yuxarıda
+                qalıb qalanı aşağı sətrə düşürdü. İndi `min-w` + `whitespace-nowrap`:
+                165px ölçü qorunur, amma mətn heç vaxt qırılmır. */}
             <Link
               href="/"
-              className="font-display text-xl font-extrabold tracking-tight text-brand-ink shrink-0 md:text-2xl"
+              className="shrink-0 whitespace-nowrap font-display text-xl font-extrabold tracking-tight text-brand-ink md:min-w-[165px] md:text-[1.6rem]"
             >
               E-C<span className="text-brand">O</span>MMERCE
               <span className="text-brand">.</span>
             </Link>
 
-            {/* Masaüstü — tam axtarış barı (platforma tabları + input) */}
-            <div className="hidden flex-1 md:flex">
+            {/* Logo ilə "Kataloq" arasındakı boşluq. Sabit 145px yalnız çox
+                geniş ekranda saxlanılır — dar ekranda sıxılır ki, axtarış
+                paneli yer tapsın. */}
+            <span
+              aria-hidden
+              className="hidden shrink md:block md:w-10 xl:w-[145px]"
+            />
+
+            {/* Kataloq — mega-menyunu açır. Əvvəl sadəcə `/categories`
+                səhifəsinə link idi; ağacı görmək üçün səhifə dəyişmək
+                lazım gəlirdi. */}
+            <CatalogMenu />
+
+            {/* Axtarış paneli — Kataloq düyməsindən 20px sonra, qalan sahəni
+                tutur, 970px-dən enli olmur. */}
+            <div className="hidden min-w-0 flex-1 md:flex lg:ml-5 lg:max-w-[970px]">
               <SearchBar
                 platform={platform}
                 onPlatformChange={setPlatform}
@@ -79,44 +96,29 @@ export function Header({
               )}
             </button>
 
-            {/* Actions — mobildə yalnız səbət, qalanı bottom-nav-dadır */}
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0 md:ml-auto">
-              <Link
+            {/* İkonlar — masaüstündə 60×60 dairə, aralarında 20px.
+                Səbət brend rəngindədir (əsas hərəkət), qalanları neytral fonda.
+                Mobildə yalnız burger qalır — qalan naviqasiya bottom-nav-dadır. */}
+            <div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4 md:ml-5 md:gap-5">
+              <IconButton
                 href={user ? "/panel" : "/login"}
-                className="hidden items-center gap-1.5 text-sm font-medium text-foreground/70 transition-colors hover:text-foreground md:flex"
+                label={user ? user.fullName.split(" ")[0] : t.common.login}
               >
                 <User className="h-5 w-5" />
-                <span className="hidden md:inline">
-                  {user ? user.fullName.split(" ")[0] : t.common.login}
-                </span>
-              </Link>
+              </IconButton>
 
-              <Link
-                href="/wishlist"
-                aria-label={t.nav.wishlist}
-                className="relative hidden text-foreground/70 hover:text-foreground md:block"
-              >
+              <IconButton href="/wishlist" label={t.nav.wishlist} badge={wishlistItems}>
                 <Heart className="h-5 w-5" />
-                {wishlistItems > 0 && (
-                  <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-destructive text-[10px] font-bold text-white">
-                    {wishlistItems}
-                  </span>
-                )}
-              </Link>
+              </IconButton>
 
-              {/* Səbət yalnız masaüstündə — mobildə aşağı paneldədir */}
-              <Link
-                href="/cart"
-                aria-label={t.pages.cart}
-                className="relative hidden text-foreground/70 transition-transform active:scale-90 hover:text-foreground md:block"
-              >
-                <ShoppingCart className="h-6 w-6 md:h-5 md:w-5" />
-                {totalItems > 0 && (
-                  <span className="absolute -right-2 -top-2 grid h-4 w-4 place-items-center rounded-full bg-brand text-[10px] font-bold text-brand-foreground">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
+              <IconButton href="/cart" label={t.pages.cart} badge={totalItems} accent>
+                <ShoppingCart className="h-5 w-5" />
+              </IconButton>
+
+              {/* Dil — eyni dairə ölçüsündə, ikon qrupunun sonunda */}
+              <div className="hidden md:grid md:h-[60px] md:w-[60px] md:place-items-center md:rounded-full md:bg-secondary">
+                <LangSwitcher />
+              </div>
 
               {/* Mobil burger menyu — giriş, qalan linklər, dil */}
               <MobileMenu user={user} />
@@ -146,16 +148,66 @@ export function Header({
           </div>
         </div>
 
-        {/* 3) Alt zolaq — kateqoriyalar, yalnız masaüstündə */}
-        <div className="hidden md:block">
-          <CategoryBar
-            categories={categories}
-            platformCategories={platformCategories}
-            platformSubcategories={platformSubcategories}
-          />
-        </div>
-
       </header>
+
+      {/* Kateqoriya "story" paneli — header-in İÇİNDƏ DEYİL, ondan sonra gələn
+          müstəqil kartdır. Səbəb: header `sticky`-dir; panel də orada qalsaydı
+          səhifə sürüşdükcə ekranın 170px-ni daim tutardı. İndi məzmunla birlikdə
+          yuxarı sürüşür.
+
+          MOBİLDƏ DƏ GÖRÜNÜR: əvvəlki mətn həbləri dar ekrana sığmırdı, dairəvi
+          lent isə mobil üçün doğulub. Ana səhifədəki kateqoriya bölmələri
+          bunun əvəzinə silindi. */}
+      <CategoryBar
+        categories={categories}
+        platformCategories={platformCategories}
+      />
     </>
+  );
+}
+
+/**
+ * Header ikon düyməsi — masaüstündə 60×60 dairə, mobildə sadə ikon.
+ *
+ * Ayrıca komponent olması təkrarı yığır: dörd düymə eyni ölçü, eyni fon və
+ * eyni nişan (badge) məntiqini paylaşır; əvvəl hər biri öz sinif sətrini
+ * daşıyırdı və biri dəyişəndə qalanları geridə qalırdı.
+ */
+function IconButton({
+  href,
+  label,
+  badge = 0,
+  accent = false,
+  children,
+}: {
+  href: string;
+  label: string;
+  /** 0-dan böyükdürsə sağ üstdə say göstərilir. */
+  badge?: number;
+  /** Səbət kimi əsas hərəkət — brend fonunda. */
+  accent?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className={`relative hidden shrink-0 place-items-center rounded-full transition-opacity hover:opacity-80 md:grid md:h-[60px] md:w-[60px] ${
+        accent
+          ? "bg-brand text-brand-foreground"
+          : "bg-secondary text-foreground/75"
+      }`}
+    >
+      {children}
+      {badge > 0 && (
+        <span
+          className={`absolute right-0 top-0 grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold ${
+            accent ? "bg-brand-ink text-white" : "bg-destructive text-white"
+          }`}
+        >
+          {badge}
+        </span>
+      )}
+    </Link>
   );
 }

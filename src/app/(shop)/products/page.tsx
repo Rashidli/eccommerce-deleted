@@ -20,7 +20,7 @@ import {
   importPartzonaCategory,
   dbCategoryProductIds,
 } from "@/lib/partzona/search";
-import { PageSkeleton } from "@/components/ui/skeleton";
+import { SearchLoader } from "@/components/ui/search-loader";
 import { ProductsFilter } from "./products-filter";
 
 /** İlk səhifədə göstərilən məhsul sayı — `/api/search` ilə EYNİ olmalıdır,
@@ -91,9 +91,13 @@ export default async function ProductsPage({
   // komponenti data gələnə qədər gözləyir və istifadəçi heç bir yüklənmə
   // göstəricisi görmür (kateqoriya seçəndə "işləmir" təsiri yaranırdı).
   return (
+    // `key` sorğu dəyişəndə sərhədi yenidən qurur — eyni səhifədə yeni axtarış
+    // edəndə də yükləyici görünsün (əks halda köhnə nəticələr donub qalırdı).
     <Suspense
       key={`${q ?? ""}|${platform ?? ""}|${cat ?? ""}`}
-      fallback={<PageSkeleton />}
+      // Sorğu mətni BURADAN ötürülür (`loading.tsx`-dən yox): orada söz
+      // prefetch səbəbindən köhnə qala bilər.
+      fallback={<SearchLoader query={q?.trim()} />}
     >
       <ProductsContent q={q} platform={platform} cat={cat} />
     </Suspense>

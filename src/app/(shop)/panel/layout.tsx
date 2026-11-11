@@ -33,7 +33,10 @@ export default function PanelLayout({
         </h1>
       </div>
 
-      <div className="mx-auto max-w-7xl md:px-4 md:py-8">
+      {/* `container-fluid` QƏSDƏN İŞLƏDİLMİR: panel mobildə kənarsızdır
+          (kartlar tam enə yayılır), utility isə 16px doldurma əlavə edərdi.
+          Burada yalnız `max-w` götürülüb — doldurma md-dən yuxarı öz qaydasında. */}
+      <div className="w-full md:px-6 md:py-8">
         {/* Masaüstü başlığı */}
         <div className="mb-6 hidden md:block">
           <h1 className="text-3xl font-bold text-brand-ink">{t.panel.title}</h1>

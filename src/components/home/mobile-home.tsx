@@ -4,108 +4,59 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star } from "lucide-react";
 import { useLang } from "@/context/lang-context";
-import { getCategoryIcon } from "@/lib/category-icon";
-import { useCategoryList } from "@/lib/use-category-list";
 import type {
   ProductDTO,
-  HomeCategoryDTO,
   CampaignDTO,
+  CategoryRowDTO,
 } from "@/lib/data/catalog";
 
-// Mobil ana ekran — tətbiq düzümü: kateqoriya dairələri, promo karuseli,
-// yana sürüşən məhsul lentləri. Bütün data DB-dən props ilə gəlir.
+// Mobil ana ekran — tətbiq düzümü: promo karuseli və yana sürüşən məhsul
+// lentləri. Bütün data DB-dən props ilə gəlir.
+//
+// KATEQORİYA DAİRƏLƏRİ BURADAN SİLİNDİ: eyni siyahı indi header-də story
+// zolağı kimi durur (`header/category-bar.tsx`) və o, mobildə də görünür.
+// İkisini saxlamaq ekranın yuxarısında eyni dairələri iki dəfə göstərərdi.
 export function MobileHome({
-  categories,
-  platformCategories,
   campaigns,
   trending,
   newArrivals,
+  categoryRows = [],
 }: {
-  categories: HomeCategoryDTO[];
-  platformCategories?: Record<string, HomeCategoryDTO[]>;
   campaigns: CampaignDTO[];
   trending: ProductDTO[];
   newArrivals: ProductDTO[];
+  /** Populyar kateqoriyalar — hərəsi öz lenti ilə. */
+  categoryRows?: CategoryRowDTO[];
 }) {
   const { t } = useLang();
 
   return (
     <div className="space-y-7 pb-6 md:hidden">
-      <CategoryCircles
-        categories={categories}
-        platformCategories={platformCategories}
-      />
       <PromoCarousel campaigns={campaigns} />
       <ProductRail
         title={t.sections.trending}
         href="/products"
         products={trending}
       />
+      {/* Populyar kateqoriyalar — masaüstündəki karuselin mobil qarşılığı.
+          Burada embla yerinə mövcud `ProductRail` işlədilir: mobil ekranda
+          barmaqla sürüşdürmə onsuz da native-dir, ox düymələri isə kartların
+          üstünü örtərdi. */}
+      {categoryRows.map((row) => (
+        <ProductRail
+          key={row.key}
+          title={row.name}
+          href={row.href}
+          products={row.products}
+          limit={20}
+        />
+      ))}
       <ProductRail
         title={t.sections.newArrivals}
         href="/new"
         products={newArrivals}
       />
     </div>
-  );
-}
-
-function CategoryCircles({
-  categories,
-  platformCategories,
-}: {
-  categories: HomeCategoryDTO[];
-  platformCategories?: Record<string, HomeCategoryDTO[]>;
-}) {
-  const { t } = useLang();
-  const { list } = useCategoryList(categories, platformCategories);
-
-  // Seçilmiş platformanın kateqoriya ağacı yoxdursa (məs. Taobao) — aydın mesaj
-  if (list.length === 0) {
-    return (
-      <section className="pt-4">
-        <p className="rounded-xl border border-dashed border-border bg-secondary/30 px-4 py-4 text-center text-xs text-muted-foreground">
-          {t.sections.noPlatformCategories}
-        </p>
-      </section>
-    );
-  }
-
-  return (
-    <section className="-mx-4 overflow-x-auto scroll-px-4 snap-x scrollbar-hide">
-      <div className="flex gap-4 px-4 pt-4">
-        {list.map((category) => {
-          const Icon = getCategoryIcon(category.key, category.name, category.nameEn);
-          return (
-            <Link
-              key={category.key}
-              href={category.href}
-              className="flex w-16 shrink-0 snap-start flex-col items-center gap-1.5 transition-transform active:scale-90"
-            >
-              <span className="relative h-16 w-16 overflow-hidden rounded-full bg-secondary ring-1 ring-border">
-                {category.img ? (
-                  <Image
-                    src={category.img}
-                    alt={category.name}
-                    fill
-                    sizes="64px"
-                    className="object-cover"
-                  />
-                ) : (
-                  // Şəkil yoxdursa — brend qradiyentli ikon
-                  <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand/20 to-purple-500/20 text-brand">
-                    <Icon className="h-6 w-6" />
-                  </span>
-                )}
-              </span>
-              <span className="w-full truncate text-center text-[11px] font-medium text-foreground/80">
-                {category.name}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 
@@ -151,10 +102,13 @@ function ProductRail({
   title,
   href,
   products,
+  /** Lentdə göstəriləcək maksimum kart — kateqoriya lentləri 20 verir. */
+  limit = 10,
 }: {
   title: string;
   href: string;
   products: ProductDTO[];
+  limit?: number;
 }) {
   const { t } = useLang();
 
@@ -173,7 +127,7 @@ function ProductRail({
 
       <div className="-mx-4 overflow-x-auto scroll-px-4 snap-x snap-mandatory scrollbar-hide">
         <div className="flex gap-3 px-4">
-          {products.slice(0, 10).map((product) => (
+          {products.slice(0, limit).map((product) => (
             <Link
               key={product.id}
               href={`/products/${product.id}`}

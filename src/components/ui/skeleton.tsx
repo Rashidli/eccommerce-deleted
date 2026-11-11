@@ -44,7 +44,7 @@ export function ProductGridSkeleton({
 export function ProductDetailSkeleton() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="container-fluid py-8">
         <Skeleton className="mb-6 h-4 w-64" />
 
         <div className="grid gap-8 lg:grid-cols-2">
@@ -90,7 +90,7 @@ export function ProductDetailSkeleton() {
 export function PageSkeleton() {
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8">
+      <div className="container-fluid py-8">
         <Skeleton className="mb-2 h-8 w-48" />
         <Skeleton className="mb-6 h-4 w-32" />
         <ProductGridSkeleton />

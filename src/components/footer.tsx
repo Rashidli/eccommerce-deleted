@@ -37,7 +37,7 @@ export function Footer() {
           Blokdakı yarpaq şəkli itməsin deyə aşağıda loqonun yanına keçdi. */}
 
       {/* Links Section */}
-      <div className="mx-auto grid max-w-7xl gap-8 px-6 py-12 md:grid-cols-4">
+      <div className="container-fluid grid gap-8 py-12 md:grid-cols-4">
         <div className="md:col-span-2">
           <div className="flex items-center gap-3">
             <p className="font-display text-2xl font-extrabold text-white">
@@ -107,7 +107,7 @@ export function Footer() {
 
       {/* Bottom Bar */}
       <div className="border-t border-white/10">
-        <div className="mx-auto flex max-w-7xl items-center justify-center px-6 py-4 text-xs text-white/50">
+        <div className="container-fluid flex items-center justify-center py-4 text-xs text-white/50">
           <p>&copy; 2026 E-Commerce. {t.footer.rights}</p>
         </div>
       </div>

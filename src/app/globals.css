@@ -205,3 +205,40 @@
     display: none;
   }
 }
+
+/* ═══ Axtarış yükləyicisi (components/ui/search-loader.tsx) ═══
+   Fırlanma Tailwind-in öz `animate-spin`-i ilə gedir — ayrıca keyframe yazmırıq.
+   Burada yalnız hərəkət azaldılması nəzərə alınır. */
+@layer utilities {
+  /* Hərəkət azaldılması seçilibsə fırlanma DAYANMIR, sadəcə yavaşıyır:
+     yükləmə göstəricisində hərəkətin özü məlumatdır — tam dayandırsaq
+     istifadəçi səhifənin donduğunu düşünər. */
+  @media (prefers-reduced-motion: reduce) {
+    .search-spin {
+      animation-duration: 2.4s;
+    }
+  }
+}
+
+/* ═══ Sayt konteyneri ═══
+   Bootstrap `.container-fluid` — en həmişə 100%, sabit 15px kənar doldurma.
+   Əvvəl `mx-auto max-w-7xl px-4` (1280px) 10 faylda təkrarlanırdı; indi eni
+   dəyişmək üçün yalnız bu blok redaktə olunur. */
+@layer utilities {
+  .container-fluid {
+    width: 100%;
+    padding-right: 40px;
+    padding-left: 40px;
+    margin-right: auto;
+    margin-left: auto;
+    box-sizing: border-box;
+  }
+
+  /* Dar ekranda 40px kənar məzmun üçün çox yer yeyir — mobildə 16px. */
+  @media (max-width: 767px) {
+    .container-fluid {
+      padding-right: 16px;
+      padding-left: 16px;
+    }
+  }
+}

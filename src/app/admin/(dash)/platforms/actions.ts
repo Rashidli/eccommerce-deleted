@@ -1,10 +1,12 @@
 "use server";
 
+import sharp from "sharp";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/auth";
+import { CATEGORY_FULL_SIZE, writeCategoryImage } from "@/lib/images/category-image";
 
 // Platforma və platforma kateqoriyalarının idarəetməsi.
 // Qayda #1: burada YALNIZ admin sessiyası (`requireAdmin`) — customer auth ilə
@@ -41,6 +43,68 @@ export async function toggleCategoryVisibility(
     data: { [field]: value },
   });
   revalidateStorefront();
+}
+
+/**
+ * KATEQORİYA ŞƏKLİ — header-dəki "story" dairəsində görünən şəkli yükləyir.
+ *
+ * Niyə lazım oldu: şəkli yalnız AI generatoru (`/api/admin/category-images`)
+ * yarada bilirdi; admin formasında isə sadəcə URL sahəsi vardı, yəni öz şəklini
+ * qoymaq mümkün deyildi.
+ *
+ * Saxlama yolu AI generatoru ilə EYNİDİR (`public/categories/` → DB-də
+ * `/categories/fayl.webp`), ona görə iki mənbə bir-birini sərbəst əvəz edir.
+ * Yazma özü `lib/images/category-image.ts`-dədir — miniatür də orada yaranır.
+ *
+ * KEŞ SINDIRMA: fayl adı deterministikdir (`1688-10165.webp`) — üzərinə yazanda
+ * ünvan dəyişmir və brauzer/`next/image` köhnə şəkli göstərməyə davam edərdi.
+ * Ona görə DB-yə `?v=<vaxt>` ilə yazılır: ünvan dəyişir, keş yenilənir.
+ */
+export async function uploadCategoryImage(formData: FormData) {
+  await requireAdmin();
+
+  const id = String(formData.get("id") ?? "");
+  const file = formData.get("file");
+  if (!id || !(file instanceof File) || file.size === 0) return;
+
+  // Yalnız şəkil və ağlabatan ölçü: `sharp` zədəli faylda atır, nəhəng fayl isə
+  // 2 nüvəli serveri lazımsız yükləyir.
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Yalnız şəkil faylı yükləmək olar.");
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Şəkil 5 MB-dan böyük olmamalıdır.");
+  }
+
+  const category = await prisma.platformCategory.findUnique({
+    where: { id },
+    select: { platformKey: true, externalId: true },
+  });
+  if (!category) return;
+
+  // 512px kvadrat webp — AI generatoru ilə eyni format. Şəkil dairədə
+  // göstərilir, ondan böyüyünün mənası yoxdur.
+  const webp = await sharp(Buffer.from(await file.arrayBuffer()))
+    .resize(CATEGORY_FULL_SIZE, CATEGORY_FULL_SIZE, {
+      fit: "cover",
+      position: "centre",
+    })
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  // Böyük fayl + 128px miniatür bir yerdə yazılır.
+  const publicPath = await writeCategoryImage(
+    `${category.platformKey}-${category.externalId}`,
+    webp,
+  );
+
+  await prisma.platformCategory.update({
+    where: { id },
+    data: { image: `${publicPath}?v=${Date.now()}` },
+  });
+
+  revalidateStorefront();
+  revalidatePath("/admin/categories");
 }
 
 /** Kateqoriyanın sıra nömrəsi — zolaqda/bölmədə hansı ardıcıllıqla görünsün. */

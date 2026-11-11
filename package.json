@@ -9,11 +9,15 @@
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
     "images:transparent": "tsx scripts/transparent-images.ts",
+    "bench:accuracy": "NODE_OPTIONS=--conditions=react-server tsx scripts/bench-accuracy.ts",
+    "bench:search": "NODE_OPTIONS=--conditions=react-server tsx scripts/bench-search.ts",
+    "categories:thumbs": "NODE_OPTIONS=--conditions=react-server tsx scripts/category-thumbs.ts",
     "image:gen": "tsx scripts/gen-image.ts",
     "categories:translate": "NODE_OPTIONS=--conditions=react-server tsx scripts/translate-categories.ts",
     "categories:taobao": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed-taobao-categories.ts",
     "categories:zara": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed-zara-categories.ts",
     "products:translate": "NODE_OPTIONS=--conditions=react-server tsx scripts/translate-products.ts",
+    "search:terms": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed-search-terms.ts",
     "products:repair-images": "NODE_OPTIONS=--conditions=react-server tsx scripts/repair-product-images.ts",
     "purchase:log": "NODE_OPTIONS=--conditions=react-server tsx scripts/purchase-log.ts",
     "purchase:zara": "NODE_OPTIONS=--conditions=react-server tsx scripts/purchase-zara.ts",
@@ -23,7 +27,8 @@
     "customer:code": "NODE_OPTIONS=--conditions=react-server tsx scripts/set-customer-code.ts",
     "currency:usd": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed-currency-usd.ts",
     "cargo:seed": "NODE_OPTIONS=--conditions=react-server tsx scripts/seed-cargo.ts",
-    "admin:create": "tsx scripts/create-admin.ts"
+    "admin:create": "tsx scripts/create-admin.ts",
+    "admin:password": "tsx scripts/reset-admin-password.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

@@ -273,21 +273,48 @@ export async function importPartzonaSearch(opts: {
 
   // Sorğu PLATFORMANIN dilinə çevrilir (1688/Taobao → çincə, Zara → ispanca).
   // Hədəf dili servis özü elan edir, ona görə burada platforma adı keçmir.
-  const { keyword, translated } = await translateQuery(
+  const { keyword, translated, broader } = await translateQuery(
     query,
     opts.lang,
     service.searchLang,
   );
 
-  const res = await service.search({
+  const page = opts.page ?? 1;
+  const perPage = opts.perPage ?? 20;
+
+  let usedKeyword = keyword;
+  let res = await service.search({
     keyword,
     translated,
     lang: opts.lang,
-    page: opts.page ?? 1,
-    perPage: opts.perPage ?? 20,
+    page,
+    perPage,
   });
 
-  if (!res.ok) return { ...EMPTY(keyword, res.message), translated };
+  // SIFIR NƏTİCƏ → GENİŞLƏNDİRİB BİR DƏFƏ TƏKRAR.
+  //
+  // Sorğuda lüğətin tanımadığı söz qalanda nəticə tam sıfırlana bilər. Ölçüldü:
+  //     'gucci 女包'   → 300 nəticə   (brend işləyir — saxlamaq DOĞRUDUR)
+  //     'qirmizi 女包' → 0   nəticə   (naməlum söz sorğunu öldürür)
+  //     '女包'         → 2000 nəticə  (genişləndirilmiş forma)
+  // Hansının brend, hansının naməlum söz olduğunu qabaqcadan təxmin etmək
+  // əvəzinə PLATFORMANIN CAVABINI siqnal kimi işlədirik: nəticə sıfırdırsa
+  // naməlum sözləri atıb yenidən soruşuruq. Yalnız BİR dəfə — sonsuz cəhd yox.
+  if (res.ok && res.order.length === 0 && broader && broader !== keyword) {
+    const retry = await service.search({
+      keyword: broader,
+      translated: true,
+      lang: opts.lang,
+      page,
+      perPage,
+    });
+    if (retry.ok && retry.order.length > 0) {
+      res = retry;
+      usedKeyword = broader;
+    }
+  }
+
+  if (!res.ok) return { ...EMPTY(usedKeyword, res.message), translated };
 
   await upsertProducts(res.products);
   const productIds = await resolveIds(service.key, res.order);
@@ -296,7 +323,7 @@ export async function importPartzonaSearch(opts: {
   // artıq tərcüməli olanları ötür (qayda #5: istifadəçi öz dilində ad görsün).
   translateProductsInBackground(productIds);
 
-  return { ok: true, productIds, total: res.total, keyword, translated };
+  return { ok: true, productIds, total: res.total, keyword: usedKeyword, translated };
 }
 
 /* -------------------------- KATEQORİYA BAXIŞI -------------------------- */

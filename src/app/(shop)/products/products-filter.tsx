@@ -370,7 +370,7 @@ export function ProductsFilter({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="container-fluid py-8">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-brand-ink">

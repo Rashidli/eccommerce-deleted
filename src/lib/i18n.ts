@@ -45,6 +45,9 @@ interface Dict {
     searchTitle: string;
     searchSub: string;
     login: string;
+    /** Sürüşdürmə oxlarının ekran-oxuyucu adları. */
+    prev: string;
+    next: string;
   };
   hero: { title: string; subtitle: string; description: string; cta: string };
   promo: Record<
@@ -74,6 +77,26 @@ interface Dict {
     sale: string;
   };
   search: { platform: string; all: string };
+  /**
+   * Nəticə gözlənilərkən göstərilən yükləmə mətnləri.
+   *
+   * Sorğu CANLI gedir — kataloq həmin an süzülür (bax `lib/partzona/search.ts`),
+   * ona görə boş skelet yerinə nə baş verdiyini izah edən mətn göstərilir:
+   * gözləmə "sayt donub" yox, "iş görülür" kimi oxunsun.
+   *
+   * Qeyd: tədarükçünün adı BURADA DA çəkilmir — `platform-visibility.ts`-dəki
+   * `SHOW_PLATFORM_UI = false` qərarı mətnlərə də şamil olunur.
+   */
+  searchLoader: {
+    subtitle: string;
+    /** Mərhələ siyahısı — `lib/partzona/search.ts`-dəki REAL addımlarla üzbəüz. */
+    steps: {
+      translate: string;
+      search: string;
+      collect: string;
+      finalize: string;
+    };
+  };
   pages: {
     categories: string;
     deals: string;
@@ -362,6 +385,8 @@ export const dict: Record<Lang, Dict> = {
       more: "Daha çox",
     },
     common: {
+      prev: "Əvvəlki",
+      next: "Növbəti",
       search: "Məhsul axtar...",
       searchHint: "Açmaq üçün Ctrl+K",
       addToCart: "Səbətə at",
@@ -420,6 +445,15 @@ export const dict: Record<Lang, Dict> = {
       sale: "Endirim",
     },
     search: { platform: "Platforma", all: "Hamısı" },
+    searchLoader: {
+      subtitle: "Milyonlarla məhsul arasından sizə uyğun olanlar seçilir",
+      steps: {
+        translate: "Sorğu kataloq dilinə çevrilir",
+        search: "Qlobal kataloqda axtarılır",
+        collect: "Nəticələr yığılır və süzülür",
+        finalize: "Adlar tərcümə olunur, qiymətlər hesablanır",
+      },
+    },
     pages: {
       categories: "Kateqoriyalar",
       deals: "Endirimlər",
@@ -692,6 +726,8 @@ export const dict: Record<Lang, Dict> = {
       more: "More",
     },
     common: {
+      prev: "Previous",
+      next: "Next",
       search: "Search products...",
       searchHint: "Press Ctrl+K to open",
       addToCart: "Add to Cart",
@@ -750,6 +786,15 @@ export const dict: Record<Lang, Dict> = {
       sale: "Sale",
     },
     search: { platform: "Platform", all: "All" },
+    searchLoader: {
+      subtitle: "Finding your matches among millions of products",
+      steps: {
+        translate: "Translating your query for the catalogue",
+        search: "Searching the global catalogue",
+        collect: "Collecting and filtering results",
+        finalize: "Translating names, calculating prices",
+      },
+    },
     pages: {
       categories: "Categories",
       deals: "Deals",
@@ -1022,6 +1067,8 @@ export const dict: Record<Lang, Dict> = {
       more: "Ещё",
     },
     common: {
+      prev: "Назад",
+      next: "Вперёд",
       search: "Поиск товаров...",
       searchHint: "Ctrl+K чтобы открыть",
       addToCart: "В корзину",
@@ -1080,6 +1127,15 @@ export const dict: Record<Lang, Dict> = {
       sale: "Скидки",
     },
     search: { platform: "Платформа", all: "Все" },
+    searchLoader: {
+      subtitle: "Из миллионов товаров подбираем подходящие именно вам",
+      steps: {
+        translate: "Запрос переводится на язык каталога",
+        search: "Поиск по глобальному каталогу",
+        collect: "Результаты собираются и фильтруются",
+        finalize: "Названия переводятся, цены пересчитываются",
+      },
+    },
     pages: {
       categories: "Категории",
       deals: "Скидки",

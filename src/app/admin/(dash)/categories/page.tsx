@@ -1,11 +1,11 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth";
 import { Card, EmptyState, PageHeader, PrimaryLink, Table, Td } from "@/components/admin/ui";
 import { DeleteButton } from "@/components/admin/form-actions";
 import { VisibilityToggle } from "../platforms/toggle";
+import { CategoryImageUpload } from "./image-upload";
 import { deleteCategory } from "./actions";
 import { enabledPlatformKeyWhere } from "@/lib/platform-visibility";
 
@@ -29,13 +29,13 @@ export const metadata = { robots: { index: false, follow: false } };
 export default async function AdminCategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ platform?: string }>;
+  searchParams: Promise<{ platform?: string; parent?: string }>;
 }) {
   // İcazə yoxlaması səhifənin ÖZÜNDƏ: menyu gizlətmək kifayət deyil,
   // ünvanı əl ilə yazmaq mümkündür.
   await requirePermission("categories");
 
-  const { platform = "" } = await searchParams;
+  const { platform = "", parent = "" } = await searchParams;
 
   // Platforma siyahısı BAZADAN — kodda sabit deyil (qayda #4).
   const platforms = await prisma.platform.findMany({
@@ -71,7 +71,9 @@ export default async function AdminCategoriesPage({
         title="Kateqoriyalar"
         subtitle={
           active
-            ? "Platformadan gələn ağac — adlar mənbədən gəlir, görünmə bizimdir"
+            ? parent
+              ? "Alt kateqoriyalar — mega-menyuda adın solundakı dairə bu şəkildir"
+              : "Platformadan gələn ağac — adlar mənbədən gəlir, görünmə bizimdir"
             : "Bizim öz kateqoriyalarımız — storefront URL-lərini bunlar qurur"
         }
         action={
@@ -102,7 +104,10 @@ export default async function AdminCategoriesPage({
       </div>
 
       {active ? (
-        <PlatformCategories platformKey={active} />
+        // `parent` verilibsə həmin kateqoriyanın ALTLARI göstərilir — eyni
+        // cədvəl, eyni şəkil yükləyicisi. Ayrıca səhifə açmadıq: sətirlərin
+        // strukturu eynidir, fərq yalnız hansı valideyni süzməkdədir.
+        <PlatformCategories platformKey={active} parentId={parent} />
       ) : (
         <OwnCategories />
       )}
@@ -159,10 +164,19 @@ async function OwnCategories() {
  * geri qayıdır. Bizim əlimizdə olan şey görünmədir — nav zolağı və ana
  * səhifə bayraqları AYRIDIR (biri digərini nəzərdə tutmur).
  */
-async function PlatformCategories({ platformKey }: { platformKey: string }) {
-  const [categories, subCounts] = await Promise.all([
+async function PlatformCategories({
+  platformKey,
+  parentId = "",
+}: {
+  platformKey: string;
+  /** Boşdursa əsas kateqoriyalar, doludursa həmin valideynin altları. */
+  parentId?: string;
+}) {
+  const level = parentId || "0";
+
+  const [categories, subCounts, parentRow] = await Promise.all([
     prisma.platformCategory.findMany({
-      where: { platformKey, parentExternalId: "0" },
+      where: { platformKey, parentExternalId: level },
       orderBy: [{ sortOrder: "asc" }, { externalId: "asc" }],
     }),
     prisma.platformCategory.groupBy({
@@ -170,32 +184,52 @@ async function PlatformCategories({ platformKey }: { platformKey: string }) {
       where: { platformKey, parentExternalId: { not: "0" } },
       _count: { _all: true },
     }),
+    parentId
+      ? prisma.platformCategory.findFirst({
+          where: { platformKey, externalId: parentId },
+          select: { nameAz: true, nameEn: true, externalId: true },
+        })
+      : null,
   ]);
 
   const subBy = new Map(subCounts.map((s) => [s.parentExternalId ?? "", s._count._all]));
 
   return (
     <Card>
+      {parentRow && (
+        <div className="mb-3 flex items-center gap-2 text-sm">
+          <Link
+            href={`/admin/categories?platform=${platformKey}`}
+            className="inline-flex items-center gap-1.5 font-medium text-brand hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Əsas kateqoriyalar
+          </Link>
+          <span className="text-muted-foreground">/</span>
+          <span className="font-semibold text-foreground">
+            {parentRow.nameAz ?? parentRow.nameEn ?? parentRow.externalId}
+          </span>
+        </div>
+      )}
       {categories.length === 0 ? (
         <EmptyState>
-          Bu platformanın kateqoriyası yoxdur — əvvəlcə sinxronizasiya lazımdır.
+          {parentId
+            ? "Bu kateqoriyanın alt kateqoriyası yoxdur."
+            : "Bu platformanın kateqoriyası yoxdur — əvvəlcə sinxronizasiya lazımdır."}
         </EmptyState>
       ) : (
-        <Table head={["", "Ad", "Alt kateq.", "Nav zolağı", "Ana səhifə", "ID"]}>
+        <Table head={["Şəkil", "Ad", "Alt kateq.", "Nav zolağı", "Ana səhifə", "ID"]}>
           {categories.map((c) => (
             <tr key={c.id} className="hover:bg-secondary/50">
               <Td>
-                <span className="relative block h-10 w-10 overflow-hidden rounded-lg bg-secondary">
-                  {c.image && (
-                    <Image
-                      src={c.image}
-                      alt={c.nameAz ?? c.externalId}
-                      fill
-                      sizes="40px"
-                      className="object-contain p-1"
-                    />
-                  )}
-                </span>
+                {/* Önizləmənin özü yükləmə düyməsidir — üstünə klik edib yeni
+                    şəkil seçmək olur. Header-dəki story dairəsində məhz bu
+                    şəkil görünür. */}
+                <CategoryImageUpload
+                  id={c.id}
+                  image={c.image}
+                  label={c.nameAz ?? c.nameEn ?? c.externalId}
+                />
               </Td>
               <Td>
                 <span className="font-medium text-foreground">
@@ -205,7 +239,21 @@ async function PlatformCategories({ platformKey }: { platformKey: string }) {
                   <span className="ml-2 text-xs text-muted-foreground">{c.nameZh}</span>
                 )}
               </Td>
-              <Td className="text-muted-foreground">{subBy.get(c.externalId) ?? 0}</Td>
+              <Td>
+                {/* Say linkdir: alt kateqoriyaların şəklini də buradan yükləyirik.
+                    Altı olmayan sətirdə sadəcə sıfır yazılır — boş cədvələ
+                    aparan link çıxılmaz nöqtədir. */}
+                {(subBy.get(c.externalId) ?? 0) > 0 ? (
+                  <Link
+                    href={`/admin/categories?platform=${platformKey}&parent=${c.externalId}`}
+                    className="font-medium text-brand hover:underline"
+                  >
+                    {subBy.get(c.externalId)}
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground">0</span>
+                )}
+              </Td>
               <Td>
                 <VisibilityToggle
                   id={c.id}

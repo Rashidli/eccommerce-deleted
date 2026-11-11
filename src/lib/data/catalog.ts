@@ -18,6 +18,7 @@ import {
   isPlatformDisabled,
   SHOW_PLATFORM_UI,
   ENABLED_PLATFORMS,
+  DEFAULT_PLATFORM,
   categoryHref,
 } from "@/lib/platform-visibility";
 
@@ -125,7 +126,19 @@ function parseJsonArray<T>(raw: string | null): T[] | undefined {
   }
 }
 
-type ProductRow = Awaited<ReturnType<typeof prisma.product.findMany>>[number];
+/**
+ * `toProductDTO`-nun oxuduğu sütunlar.
+ *
+ * `raw` QƏSDƏN KƏNARDADIR: orada platformanın tam cavabı saxlanılır (məhsul
+ * başına orta 4.7 KB, cəmi 78 MB) və DTO ona heç toxunmur. Tipdən çıxarmaq
+ * siyahı sorğularına `omit: { raw: true }` yazmağa imkan verir — ölçdüm,
+ * 100 məhsullu sorğu 314ms → 20ms. Tam sətir ötürən köhnə çağırışlar da
+ * işləməyə davam edir (geniş obyekti dar tipə vermək TS-də sərbəstdir).
+ */
+type ProductRow = Omit<
+  Awaited<ReturnType<typeof prisma.product.findMany>>[number],
+  "raw"
+>;
 
 /* -------------------------- vahid göstəriş valyutası --------------------------
  * Məhsul BAZADA öz platformasının valyutasında saxlanılır (1688/Taobao → CNY,
@@ -366,6 +379,222 @@ export async function getNewArrivals(
     skip,
   });
   return rows.map((r) => toProductDTO(r, lang));
+}
+
+/** Kataloq menyusunun ağac düyünü. */
+export type CategoryNodeDTO = {
+  id: string;
+  name: string;
+  image: string;
+  href: string;
+  children: CategoryNodeDTO[];
+};
+
+/**
+ * KATALOQ AĞACI — header-dəki "Kateqoriyalar" mega-menyusu üçün.
+ *
+ * BİR SORĞU, BİR AĞAC: bütün `PlatformCategory` sətirləri (837 ədəd) birdəfəlik
+ * çəkilib yaddaşda qruplaşdırılır. Valideyn üzrə ayrı-ayrı sorğu atmaq 59 sorğu
+ * demək olardı.
+ *
+ * AĞAC İKİ SƏVİYYƏLİDİR, çünki mənbədə üçüncü səviyyə YOXDUR: Partzona-nın
+ * `/categories` cavabı da, bazamız da eyni 59 əsas + 778 alt kateqoriyanı verir.
+ * `children` sahəsi buna baxmayaraq rekursiv tipdədir — mənbə sabah daha dərin
+ * ağac versə, UI-ı dəyişmədən işləyəcək.
+ *
+ * Şəkli olmayan kateqoriya boş `image` qaytarır; UI ikona düşür (uydurma şəkil
+ * çəkilmir).
+ */
+export async function getCategoryTree(lang: Lang): Promise<CategoryNodeDTO[]> {
+  const platformKey = DEFAULT_PLATFORM;
+  if (isPlatformDisabled(platformKey)) return [];
+
+  const rows = await prisma.platformCategory.findMany({
+    where: { platformKey },
+    orderBy: [{ sortOrder: "asc" }, { externalId: "asc" }],
+    select: {
+      externalId: true,
+      parentExternalId: true,
+      nameAz: true,
+      nameEn: true,
+      nameRu: true,
+      nameZh: true,
+      image: true,
+    },
+  });
+
+  type Row = (typeof rows)[number];
+  const toNode = (c: Row, children: CategoryNodeDTO[] = []): CategoryNodeDTO => ({
+    id: c.externalId,
+    name: pickLang(c, "name", lang) || c.nameZh || c.externalId,
+    image: c.image ?? "",
+    href: categoryHref(platformKey, c.externalId),
+    children,
+  });
+
+  const byParent = new Map<string, Row[]>();
+  for (const r of rows) {
+    const parent = r.parentExternalId ?? "0";
+    if (parent === "0") continue;
+    let bucket = byParent.get(parent);
+    if (!bucket) {
+      bucket = [];
+      byParent.set(parent, bucket);
+    }
+    bucket.push(r);
+  }
+
+  return rows
+    .filter((r) => (r.parentExternalId ?? "0") === "0")
+    .map((top) =>
+      toNode(
+        top,
+        (byParent.get(top.externalId) ?? []).map((child) => toNode(child)),
+      ),
+    );
+}
+
+/** Ana səhifə lenti — bir kateqoriya və onun ən yeni məhsulları. */
+export type CategoryRowDTO = {
+  key: string;
+  name: string;
+  href: string;
+  products: ProductDTO[];
+};
+
+/**
+ * ANA SƏHİFƏ ÜÇÜN POPULYAR KATEQORİYA LENTLƏRİ.
+ *
+ * SEÇİM ÜÇ MƏRHƏLƏLİDİR — hamısı admin nəzarətindədir (qayda #4):
+ *  1. NƏ göstərilə bilər — `showOnHome` işarəsi (/admin/categories);
+ *  2. SIRA əl ilə verilibsə (`sortOrder` > 0) — həmin sıra tətbiq olunur;
+ *  3. Verilməyibsə — məhsullarının 1688 satış rəqəmlərinə (`salesCount`) görə
+ *     avtomatik sıralanır.
+ *
+ * Yəni admin heç nə etməsə sistem özü seçir; müdaxilə etmək istəsə `sortOrder`
+ * yazır və avtomatika o kateqoriya üçün susur.
+ *
+ * NİYƏ ORTALAMA, CƏM YOX: cəm kateqoriyada NEÇƏ məhsul import etdiyimizi ölçür,
+ * populyarlığı yox — 140 məhsullu kateqoriya 20 məhsullu kateqoriyanı avtomatik
+ * üstələyərdi. Ortalama isə "bu kateqoriyanın məhsulları nə qədər yaxşı satılır"
+ * sualına cavab verir və kataloqun ölçüsündən asılı deyil.
+ *
+ * `salesCount` məhsulların ~68%-ində doludur; boşlar 0 sayılır (ehtiyatlı
+ * qiymətləndirmə — məlum olmayanı "populyar" saymırıq).
+ *
+ * QEYD: öz sifariş datamız bu sıralamada İŞTİRAK ETMİR, çünki hələ statistik
+ * kütlə yoxdur (bir neçə sifariş). Satış tarixçəsi artanda burada `OrderItem`
+ * əsaslı sıralamaya keçmək məntiqlidir.
+ */
+export async function getPopularCategoryRows(
+  lang: Lang,
+  categoryCount = 5,
+  productCount = 20,
+): Promise<CategoryRowDTO[]> {
+  await warmCaches();
+
+  const platformKey = DEFAULT_PLATFORM;
+  if (isPlatformDisabled(platformKey)) return [];
+
+  // 1) Adminin ana səhifə üçün açdığı yuxarı səviyyə kateqoriyalar.
+  const flagged = await prisma.platformCategory.findMany({
+    where: { platformKey, parentExternalId: "0", showOnHome: true },
+  });
+  if (flagged.length === 0) return [];
+
+  const categoryIds = flagged.map((c) => c.externalId);
+
+  // 2) Kateqoriya–məhsul əlaqələri. `CategoryProduct`-da Prisma relasiyası yoxdur
+  //    (yalnız `productId` sütunu), ona görə əlaqələr və məhsullar AYRI çəkilir.
+  const links = await prisma.categoryProduct.findMany({
+    where: { platformKey, categoryId: { in: categoryIds } },
+    select: { categoryId: true, productId: true },
+  });
+  if (links.length === 0) return [];
+
+  // 3) Sıralama və "ən yeni" üçün lazım olan MİNİMUM sütunlar — tam sətirlər
+  //    yalnız qalib 5 kateqoriyanın məhsulları üçün çəkilir (aşağıda).
+  const meta = await prisma.product.findMany({
+    where: {
+      id: { in: [...new Set(links.map((l) => l.productId))] },
+      isActive: true,
+      ...enabledSourceWhere(),
+    },
+    select: { id: true, salesCount: true, createdAt: true },
+  });
+  const metaById = new Map(meta.map((m) => [m.id, m]));
+
+  // Kateqoriya → (aktiv) məhsulları
+  const byCategory = new Map<string, typeof meta>();
+  for (const link of links) {
+    const m = metaById.get(link.productId);
+    if (!m) continue; // deaktiv / gizli platforma — sıralamaya da düşmür
+    let bucket = byCategory.get(link.categoryId);
+    if (!bucket) {
+      bucket = [];
+      byCategory.set(link.categoryId, bucket);
+    }
+    bucket.push(m);
+  }
+
+  const manualSortOf = new Map(flagged.map((c) => [c.externalId, c.sortOrder]));
+
+  // 4) Sıralama. ADMIN SIRASI ÜSTÜNDÜR: paneldə `sortOrder` verilibsə (>0)
+  //    kateqoriya məhz orada dayanır; verilməyibsə (0 = Prisma default,
+  //    "təyin edilməyib") avtomatik satış sıralamasına buraxılır.
+  //    Bərabərlikdə `externalId` — sıra render-dən render-ə dəyişməsin.
+  const ranked = [...byCategory.entries()]
+    .map(([categoryId, items]) => ({
+      categoryId,
+      manualSort: manualSortOf.get(categoryId) || Number.MAX_SAFE_INTEGER,
+      avgSales:
+        items.reduce((sum, p) => sum + (p.salesCount ?? 0), 0) / items.length,
+      // Ən yeni məhsullar BİR DƏFƏ sıralanır (aşağıda təkrar lazım olur).
+      newest: [...items]
+        .sort(
+          (a, b) =>
+            b.createdAt.getTime() - a.createdAt.getTime() ||
+            a.id.localeCompare(b.id),
+        )
+        .slice(0, productCount)
+        .map((p) => p.id),
+    }))
+    .sort(
+      (a, b) =>
+        a.manualSort - b.manualSort ||
+        b.avgSales - a.avgSales ||
+        a.categoryId.localeCompare(b.categoryId),
+    )
+    .slice(0, categoryCount);
+
+  // 5) Məhsul sətirləri — YALNIZ qalib kateqoriyaların məhsulları üçün.
+  //    `raw` çıxarılır: kart üçün lazım deyil, amma sətri ~4.7 KB ağırlaşdırır.
+  const rows = await prisma.product.findMany({
+    where: { id: { in: ranked.flatMap((r) => r.newest) } },
+    omit: { raw: true },
+    include: { category: true },
+  });
+  const productById = new Map(rows.map((r) => [r.id, r]));
+  const categoryByKey = new Map(flagged.map((c) => [c.externalId, c]));
+
+  return ranked
+    .map((r) => {
+      const category = categoryByKey.get(r.categoryId)!;
+      return {
+        key: r.categoryId,
+        name:
+          pickLang(category, "name", lang) || category.nameZh || r.categoryId,
+        href: categoryHref(platformKey, r.categoryId),
+        products: r.newest
+          .map((id) => productById.get(id))
+          .filter((p): p is NonNullable<typeof p> => Boolean(p))
+          .map((p) =>
+            toProductDTO(p, lang, p.category?.nameEn ?? undefined, p.category?.slug),
+          ),
+      };
+    })
+    // Boş lent göstərmirik — başlıq altında boşluq qalmasın.
+    .filter((row) => row.products.length > 0);
 }
 
 export async function getProductById(id: string, lang: Lang): Promise<ProductDTO | null> {

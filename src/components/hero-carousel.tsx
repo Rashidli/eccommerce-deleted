@@ -11,7 +11,6 @@ import {
   CarouselPrevious,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { ArrowRight } from "lucide-react";
 
 /**
  * ANA SƏHİFƏ SLAYDERİ — məzmun BAZADAN gəlir (`Slide` cədvəli).
@@ -65,41 +64,26 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
         <CarouselContent>
           {slides.map((slide, i) => (
             <CarouselItem key={slide.id}>
-              <div className="relative h-[300px] w-full overflow-hidden rounded-xl sm:h-[400px] md:h-[500px]">
+              {/* ÜST QAT (qradiyent + başlıq + "Bax" düyməsi) SİLİNDİ:
+                  bütün vizual bannerin ÖZ şəklindədir. Üstünə mətn yazmaq
+                  dizaynı ikiqat edirdi və çox vaxt şəklin öz yazısının üstünə
+                  düşürdü. Slaydın hamısı linkdir — ayrıca düyməyə ehtiyac yoxdur. */}
+              <Link
+                href={slide.href}
+                className="relative block h-[220px] w-full overflow-hidden rounded-[22px] sm:h-[360px] md:h-[550px]"
+              >
                 <Image
                   src={slide.image}
                   alt={slide.title}
                   fill
-                  // Slayder həmişə tam en tutur — burada 100vw DOĞRUDUR.
+                  // Banner konteynerin tam enini tutur — 100vw DOĞRUDUR.
                   sizes="100vw"
                   className="object-cover"
                   // Yalnız BİRİNCİ slayd prioritetdir: hamısını prioritet
                   // etmək ilk ekranın yüklənməsini yavaşladır.
                   priority={i === 0}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
-                <div className="absolute inset-0 flex items-center">
-                  <div className="container mx-auto px-8 md:px-16">
-                    <div className="max-w-xl">
-                      {slide.subtitle && (
-                        <span className="mb-4 inline-block rounded-full bg-primary px-3 py-1 text-sm font-medium text-primary-foreground">
-                          {slide.subtitle}
-                        </span>
-                      )}
-                      <h2 className="mb-4 text-3xl font-bold text-white sm:text-4xl md:text-5xl">
-                        {slide.title}
-                      </h2>
-                      <Link
-                        href={slide.href}
-                        className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-ink transition hover:bg-white/90"
-                      >
-                        Bax
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </Link>
             </CarouselItem>
           ))}
         </CarouselContent>

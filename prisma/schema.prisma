@@ -899,3 +899,49 @@ model AdminSession {
 
   @@index([adminId])
 }
+
+/// AXTARIŞ LÜĞƏTİ — istifadəçinin yazdığı sözü platformanın axtarış dilindəki
+/// açar sözə bağlayır: "sumka" → 女包, "krossovka" → 运动鞋.
+///
+/// NİYƏ LAZIMDIR (ölçülüb): müştəri kataloq dilində yox, DANIŞIQ dilində yazır —
+/// əsasən rus alınmaları ilə ("sumka", "pasaniska", "krossovka", "platye").
+/// Nə bizim tərcüməçi, nə də 1688-in öz tərcüməsi bunları tanımır:
+///
+///     'sumka'          → 5 nəticə   (sabun, keçə parça, saç sancağı)
+///     'gucci sumka'    → 0 nəticə
+///     'nike krossovka' → 0 nəticə
+///     'çanta'          → 876 nəticə, hamısı AYAQQABI
+///
+/// Düzgün çincə açar sözlə eyni sorğular:
+///
+///     '女包'      → 2000 nəticə, hamısı qadın çantası
+///     'gucci 包'  → 1049 nəticə, hamısı Gucci çantası
+///     'nike 运动鞋' → 2000 nəticə, hamısı krossovka
+///
+/// NİYƏ BAZADA, KODDA YOX: bu sözlərin dəsti AÇIQ SONLUDUR — hər müştəri
+/// başqa cür yazır ("basanojka" / "pasanojka" / "pasaniska"). Kodda hardcoded
+/// lüğət həm qayda #4-ü pozardı, həm də hər yeni söz üçün deploy tələb edərdi.
+/// Bura admin əlavə edə bilər, uğurlu AI tərcümələri isə ÖZÜ yazılır —
+/// yəni lüğət istifadə olundıqca böyüyür və AI-a müraciət azalır.
+model SearchTerm {
+  id        String   @id @default(cuid())
+  /// Sorğu dili: az | ru | en.
+  lang      String
+  /// Platformanın axtarış dili: zh | es | en (`PlatformService.searchLang`).
+  target    String
+  /// Axtarılan forma — NORMALLAŞDIRILMIŞ saxlanır (kiçik hərf, diakritikasız),
+  /// çünki istifadəçi "çanta" da yaza bilər, "canta" da. Çoxsözlü ola bilər.
+  term      String
+  /// Platformaya göndəriləcək açar söz: "女包".
+  keyword   String
+  /// true — seed/admin təsdiqləyib. AI-dan gələn avtomatik sətir bunun
+  /// üstündən YAZMIR, yoxsa bir uğursuz tərcümə yaxşı lüğəti korlayardı.
+  verified  Boolean  @default(false)
+  /// Neçə dəfə işə düşüb — admin hansı sözün vacib olduğunu görsün.
+  hits      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([lang, target, term])
+  @@index([target, lang])
+}

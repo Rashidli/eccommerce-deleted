@@ -27,7 +27,7 @@ export function PageShell({
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-4 md:py-8">
+      <div className="container-fluid py-4 md:py-8">
         {/* Masaüstü — böyük başlıq */}
         <div className="mb-6 hidden md:block">
           <h1 className="text-3xl font-bold text-brand-ink">{title}</h1>

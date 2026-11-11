@@ -1,16 +1,14 @@
 import "server-only";
-import { writeFile, mkdir } from "node:fs/promises";
-import path from "node:path";
 import { GoogleGenAI } from "@google/genai";
 import { prisma } from "@/lib/prisma";
 import { removeWhiteBackground } from "@/lib/images/remove-white-bg";
+import { writeCategoryImage } from "@/lib/images/category-image";
 
 // Kateqoriyalar üçün realistik şəkilləri Gemini ilə generasiya edir,
 // webp-ə sıxır (512px, ~10-25KB) və `public/categories/` altına yazır.
 // Yol DB-də `PlatformCategory.image` sahəsində saxlanır (qayda #4 — hardcoded yox).
 
 const MODEL = process.env.GEMINI_IMAGE_MODEL ?? "gemini-3.1-flash-image";
-const OUT_DIR = path.join(process.cwd(), "public", "categories");
 const CONCURRENCY = 3;
 
 /**
@@ -59,7 +57,6 @@ export async function generateCategoryImages(opts?: {
   });
   if (rows.length === 0) return { ok: true, generated: 0, failed: 0 };
 
-  await mkdir(OUT_DIR, { recursive: true });
   const ai = new GoogleGenAI({ apiKey: key });
 
   let generated = 0;
@@ -83,12 +80,15 @@ export async function generateCategoryImages(opts?: {
       const raw = Buffer.from(part.inlineData.data, "base64");
       const webp = await removeWhiteBackground(raw);
 
-      const file = `${platformKey}-${row.externalId}.webp`;
-      await writeFile(path.join(OUT_DIR, file), webp);
+      // Böyük fayl + 128px miniatür (bax: `lib/images/category-image.ts`).
+      const publicPath = await writeCategoryImage(
+        `${platformKey}-${row.externalId}`,
+        webp,
+      );
 
       await prisma.platformCategory.updateMany({
         where: { platformKey, externalId: row.externalId },
-        data: { image: `/categories/${file}` },
+        data: { image: publicPath },
       });
       generated++;
     } catch {
